@@ -20,10 +20,11 @@ class StackdIO(HttpMixin):
         """auth_admin is optional, only needed for creating provider, profile,
         and base security groups"""
 
-        super(StandardError, self).__init__(auth=auth, verify=verify)
+        super(StackdIO, self).__init__(auth=auth, verify=verify)
         self.base_url = base_url
         self.auth = auth
         self.auth_admin = auth_admin
+
 
     @use_admin_auth
     def create_provider(self, **kwargs):

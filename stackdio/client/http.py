@@ -1,6 +1,7 @@
 import logging
 import requests
 
+
 class NoAdminException(Exception):
     pass
 
@@ -12,7 +13,7 @@ def use_admin_auth(func):
         try:
             obj._http_options['auth'] = obj._http_options['admin']
         except KeyError:
-             raise NoAdminException("No admin credentials were specified")
+            raise NoAdminException("No admin credentials were specified")
 
         # Call the original function
         output = func(*args, **kwargs)
@@ -28,7 +29,7 @@ class HttpMixin(object):
 
     HEADERS = {
         'json': {"content-type": "application/json"},
-#        'xml': {"content-type": "application/xml"}
+        #'xml': {"content-type": "application/xml"}
     }
 
     def __init__(self, auth=None, verify=True):
@@ -41,7 +42,7 @@ class HttpMixin(object):
     def _request(self, verb, url, quiet=False, none_on_404=False, *args, **kwargs):
         """Generic request method"""
         if not quiet:
-            self._http_log().info("{0}: {1}".format(verb, url))
+            self._http_log.info("{0}: {1}".format(verb, url))
 
         headers = kwargs.get('headers', HttpMixin.HEADERS['json'])
         result = requests.request(verb, url,
