@@ -340,8 +340,8 @@ class StackdIO(HttpMixin):
 
 
     @endpoint("stacks/{stack_id}/hosts/")
-    def describe_hosts(self, stack_id, key="fqdn", ec2=False, criteria=None):
-        """Retrieve a list of info about a stack. Defaults to the fqdn for each
+    def describe_hosts(self, stack_id, key="fqdn", ec2=False):
+        """Retrieve a list of info about a stack. Defaults to the id for each
         host, but you can specify any available key. Setting ec2=True will
         force it to inspect the ec2_metadata field."""
 
@@ -375,7 +375,7 @@ class StackdIO(HttpMixin):
 
     @endpoint("stacks/{stack_id}/action/")
     def get_valid_actions(self, stack_id):
-        return self._get(endpoint, jsonify=True)['result']
+        return self._get(endpoint, jsonify=True)['available_actions']
 
 
     @endpoint("stacks/{stack_id}/action/")
