@@ -116,11 +116,11 @@ class HttpMixin(object):
         elif raise_for_status:
             result.raise_for_status()
 
-        elif jsonify:
+        # return
+        if jsonify:
             return result.json()
-
-        # Default return
-        return result
+        else:
+            return result
 
 
     def _head(self, url, *args, **kwargs):
