@@ -71,8 +71,8 @@ def endpoint(path):
             g['endpoint'] = url
 
             if oldvalue:
-                logger.warn("Value %s for 'endpoint' replaced in global scope "
-                            "for function %s" % (oldvalue, func.__name__))
+                logger.debug("Value %s for 'endpoint' replaced in global scope "
+                             "for function %s" % (oldvalue, func.__name__))
             logger.debug("%s.__globals__['endpoint'] = %s" % (func.__name__, url))
 
             result = func(obj, *args, **kwargs)
