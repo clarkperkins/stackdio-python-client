@@ -50,8 +50,6 @@ def jsonify_result(func):
     return wrapper
 
 
-
-
 def endpoint(path):
     """Takes a path extension and appends to the known API base url.
     The result of this is then added to the decorated functions global
