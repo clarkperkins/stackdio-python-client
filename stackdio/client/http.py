@@ -66,7 +66,8 @@ def endpoint(path):
                 path=path.format(**future_locals))
 
             g = func.__globals__
-            oldvalue = g.get('endpoint')
+            sentinal = object()
+            oldvalue = g.get('endpoint', sentinal)
             g['endpoint'] = url
 
             if oldvalue:
@@ -74,7 +75,10 @@ def endpoint(path):
                             "for function %s" % (oldvalue, func.__name__))
             logger.debug("%s.__globals__['endpoint'] = %s" % (func.__name__, url))
 
-            return func(obj, *args, **kwargs)
+            result = func(obj, *args, **kwargs)
+            if oldvalue is not sentinal:
+                g['endpoint'] = oldvalue
+            return result
         return wrapper
     return decorator
 
