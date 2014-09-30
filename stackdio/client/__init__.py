@@ -337,7 +337,7 @@ class StackdIO(HttpMixin):
     @endpoint("stacks/")
     def launch_stack(self, stack_data):
         """Launch a stack as described by stack_data"""
-        return self._post(endpoint, data=json.dumps(stack_data), jsonify=True)['results']
+        return self._post(endpoint, data=json.dumps(stack_data), jsonify=True)
 
 
     @endpoint("stacks/{stack_id}/hosts/")
