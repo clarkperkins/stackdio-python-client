@@ -58,24 +58,38 @@ def endpoint(path):
         @wraps(func)
         def wrapper(obj, *args, **kwargs):
 
+            # Get what locals() would return directly after calling
+            # 'func' with the given args and kwargs
             future_locals = getcallargs(func, *((obj,) + args), **kwargs)
+
+            # Build the variable we'll inject
             url = "{url}{path}".format(
                 url=obj.url,
                 path=path.format(**future_locals))
 
+            # Grab the global context for the passed function
             g = func.__globals__
-            sentinal = object()
-            oldvalue = g.get('endpoint', sentinal)
+
+            # Create a unique default object so we can accurately determine
+            # if we replaced a value
+            sentinel = object()
+            oldvalue = g.get('endpoint', sentinel)
+
+            # Inject our variable into the global scope
             g['endpoint'] = url
 
+            # Logging and function call
             if oldvalue:
                 logger.debug("Value %s for 'endpoint' replaced in global scope "
                              "for function %s" % (oldvalue, func.__name__))
             logger.debug("%s.__globals__['endpoint'] = %s" % (func.__name__, url))
 
             result = func(obj, *args, **kwargs)
-            if oldvalue is not sentinal:
+
+            # Replace the previous value, if it existed
+            if oldvalue is not sentinel:
                 g['endpoint'] = oldvalue
+
             return result
         return wrapper
     return decorator
