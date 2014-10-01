@@ -1,5 +1,6 @@
-import os
+import json
 import logging
+import os
 
 from .http import HttpMixin, use_admin_auth, endpoint
 from .exceptions import StackException
@@ -54,7 +55,7 @@ class StackdIO(HttpMixin):
         for key in form_data.keys():
             form_data[key] = kwargs.get(key)
 
-        return self._post(endpoint, data=form_data, jsonify=True)
+        return self._post(endpoint, data=json.dumps(form_data), jsonify=True)
 
 
     @endpoint("providers/")
@@ -83,7 +84,7 @@ class StackdIO(HttpMixin):
             "cloud_provider": cloud_provider,
             "default_instance_size": default_instance_size
         }
-        return self._post(endpoint, data=data, jsonify=True)
+        return self._post(endpoint, data=json.dumps(data), jsonify=True)
 
 
     @endpoint("profiles/")
@@ -107,7 +108,7 @@ class StackdIO(HttpMixin):
             "uri": formula_uri,
             "public": public,
         }
-        return self._post(endpoint, data=data, jsonify=True)
+        return self._post(endpoint, data=json.dumps(data), jsonify=True)
 
 
     @endpoint("blueprints/")
@@ -131,7 +132,7 @@ class StackdIO(HttpMixin):
                         self.get_formula(component["id"][0]),
                         component["id"][1])
 
-        return self._post(endpoint, data=blueprint, jsonify=True)
+        return self._post(endpoint, data=json.dumps(blueprint), jsonify=True)
 
 
     @use_admin_auth
@@ -145,7 +146,7 @@ class StackdIO(HttpMixin):
             "cloud_provider": cloud_provider,
             "is_default": is_default
         }
-        return self._post(endpoint, data=data, jsonify=True)
+        return self._post(endpoint, data=json.dumps(data), jsonify=True)
 
 
     @endpoint("settings/")
@@ -161,7 +162,7 @@ class StackdIO(HttpMixin):
         data = {
             "public_key": public_key
         }
-        return self._put(endpoint, data=data, jsonify=True)
+        return self._put(endpoint, data=json.dumps(data), jsonify=True)
 
 
     @endpoint("formulas/")
@@ -336,7 +337,7 @@ class StackdIO(HttpMixin):
     @endpoint("stacks/")
     def launch_stack(self, stack_data):
         """Launch a stack as described by stack_data"""
-        return self._post(endpoint, data=stack_data, jsonify=True)['results']
+        return self._post(endpoint, data=json.dumps(stack_data), jsonify=True)
 
 
     @endpoint("stacks/{stack_id}/hosts/")
@@ -389,4 +390,4 @@ class StackdIO(HttpMixin):
 
         data = {"action": action}
 
-        return self._post(endpoint, data=data, jsonify=True)
+        return self._post(endpoint, data=json.dumps(data), jsonify=True)
