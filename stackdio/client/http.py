@@ -130,7 +130,11 @@ class HttpMixin(object):
             return None
 
         elif raise_for_status:
-            result.raise_for_status()
+            try:
+                result.raise_for_status()
+            except Exception:
+                logger.error(result.text)
+                raise
 
         # return
         if jsonify:
