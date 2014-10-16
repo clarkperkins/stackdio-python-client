@@ -33,6 +33,11 @@ class StackdIO(HttpMixin):
         self.auth = auth
         self.auth_admin = auth_admin
 
+    @endpoint("")
+    def get_root(self):
+        """Get the api root"""
+        return self._get(endpoint, jsonify=True)
+
 
     @use_admin_auth
     @endpoint("providers/")
@@ -135,6 +140,14 @@ class StackdIO(HttpMixin):
         return self._post(endpoint, data=json.dumps(blueprint), jsonify=True)
 
 
+    @endpoint("blueprints/{blueprint_id}/")
+    def delete_blueprint(self, blueprint_id):
+        result = self._delete(endpoint, jsonify=True)
+        if result is None:
+            raise BlueprintException("Blueprint %s not found" % blueprint_id)
+        else:
+            return result
+
     @use_admin_auth
     @endpoint("security_groups/")
     def create_security_group(self, name, description, cloud_provider, is_default=True):
@@ -148,6 +161,11 @@ class StackdIO(HttpMixin):
         }
         return self._post(endpoint, data=json.dumps(data), jsonify=True)
 
+
+    @endpoint("settings/")
+    def get_public_key(self):
+        """Get the public key for the logged in uesr"""
+        return self._get(endpoint, jsonify=True)['public_key']
 
     @endpoint("settings/")
     def set_public_key(self, public_key):
@@ -272,6 +290,12 @@ class StackdIO(HttpMixin):
     @endpoint("stacks/{stack_id}/hosts/")
     def get_stack_hosts(self, stack_id):
         """Get a list of all stack hosts"""
+        return self._get(endpoint, jsonify=True)['results']
+
+
+    @endpoint("blueprints/")
+    def get_blueprints(self):
+        """Returns all the blueprints"""
         return self._get(endpoint, jsonify=True)['results']
 
 

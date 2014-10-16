@@ -4,3 +4,7 @@ class StackException(Exception):
 
 class NoAdminException(Exception):
     pass
+
+
+class BlueprintException(Exception):
+    pass
