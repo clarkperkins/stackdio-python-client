@@ -4,3 +4,11 @@ class StackException(Exception):
 
 class NoAdminException(Exception):
     pass
+
+
+class IncompatibleVersionException(Exception):
+    pass
+
+
+class InvalidVersionStringException(ValueError):
+    pass

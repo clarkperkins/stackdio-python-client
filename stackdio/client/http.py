@@ -3,9 +3,8 @@ import requests
 
 from functools import wraps
 from inspect import getcallargs
-from simplejson import JSONDecodeError
 
-from .exceptions import NoAdminException, StackException
+from .exceptions import NoAdminException
 
 logger = logging.getLogger(__name__)
 
@@ -27,26 +26,6 @@ def use_admin_auth(func):
         # Set the auth back to the original
         obj._http_options['auth'] = auth
         return output
-    return wrapper
-
-
-def jsonify_result(func):
-
-    def wrapper(*args, **kwargs):
-        try:
-            result = func(*args, **kwargs)
-
-            logger.info("{funcname} result:\n"
-                        "{text}".format(funcname=func.__name__,
-                                        text=result.text))
-
-            return result.json()['results']
-
-        except JSONDecodeError, e:
-            raise StackException("Unable to decode json;\n"
-                                 "Request results: %s\n"
-                                 "Exception: %s",
-                                 result.text, e)
     return wrapper
 
 
@@ -130,7 +109,11 @@ class HttpMixin(object):
             return None
 
         elif raise_for_status:
-            result.raise_for_status()
+            try:
+                result.raise_for_status()
+            except Exception:
+                logger.error(result.text)
+                raise
 
         # return
         if jsonify:
