@@ -3,9 +3,8 @@ import requests
 
 from functools import wraps
 from inspect import getcallargs
-from simplejson import JSONDecodeError
 
-from .exceptions import NoAdminException, StackException
+from .exceptions import NoAdminException
 
 logger = logging.getLogger(__name__)
 
@@ -27,26 +26,6 @@ def use_admin_auth(func):
         # Set the auth back to the original
         obj._http_options['auth'] = auth
         return output
-    return wrapper
-
-
-def jsonify_result(func):
-
-    def wrapper(*args, **kwargs):
-        try:
-            result = func(*args, **kwargs)
-
-            logger.info("{funcname} result:\n"
-                        "{text}".format(funcname=func.__name__,
-                                        text=result.text))
-
-            return result.json()['results']
-
-        except JSONDecodeError, e:
-            raise StackException("Unable to decode json;\n"
-                                 "Request results: %s\n"
-                                 "Exception: %s",
-                                 result.text, e)
     return wrapper
 
 
@@ -109,7 +88,6 @@ class HttpMixin(object):
         self._http_options['verify'] = verify
         self._http_log = logging.getLogger(__name__)
 
-
     def _request(self, verb, url, quiet=False,
                  none_on_404=False, jsonify=False, raise_for_status=True,
                  *args, **kwargs):
@@ -118,19 +96,23 @@ class HttpMixin(object):
             self._http_log.info("{0}: {1}".format(verb, url))
 
         headers = kwargs.get('headers', HttpMixin.HEADERS['json'])
+
         result = requests.request(verb, url,
                                   auth=self._http_options['auth'],
                                   headers=headers,
                                   verify=self._http_options['verify'],
                                   *args, **kwargs)
 
-
         # Handle special conditions
         if none_on_404 and result.status_code == 404:
             return None
 
         elif raise_for_status:
-            result.raise_for_status()
+            try:
+                result.raise_for_status()
+            except Exception:
+                logger.error(result.text)
+                raise
 
         # return
         if jsonify:
