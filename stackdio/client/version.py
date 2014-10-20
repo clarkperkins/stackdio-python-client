@@ -1,4 +1,4 @@
-__version__ = "0.0.6.client.1"
+__version__ = "0.6.0.client.2"
 
 from functools import wraps
 import operator
