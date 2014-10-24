@@ -49,14 +49,6 @@ class StackdIO(BlueprintMixin, FormulaMixin, ProfileMixin,
     def get_version(self):
         return self._get(endpoint, jsonify=True)['version']
 
-    @endpoint("blueprints/{blueprint_id}/")
-    def delete_blueprint(self, blueprint_id):
-        result = self._delete(endpoint, jsonify=True)
-        if result is None:
-            raise BlueprintException("Blueprint %s not found" % blueprint_id)
-        else:
-            return result
-
     @use_admin_auth
     @endpoint("security_groups/")
     def create_security_group(self, name, description, cloud_provider, is_default=True):

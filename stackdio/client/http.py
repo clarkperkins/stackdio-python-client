@@ -83,9 +83,10 @@ class HttpMixin(object):
     }
 
     def __init__(self, auth=None, verify=True):
-        self._http_options = {}
-        self._http_options['auth'] = auth
-        self._http_options['verify'] = verify
+        self._http_options = {
+            'auth': auth,
+            'verify': verify,
+        }
         self._http_log = logging.getLogger(__name__)
 
     def _request(self, verb, url, quiet=False,
@@ -120,26 +121,20 @@ class HttpMixin(object):
         else:
             return result
 
-
     def _head(self, url, *args, **kwargs):
         return self._request("HEAD", url, *args, **kwargs)
-
 
     def _get(self, url, *args, **kwargs):
         return self._request("GET", url, *args, **kwargs)
 
-
     def _delete(self, url, *args, **kwargs):
         return self._request("DELETE", url, *args, **kwargs)
-
 
     def _post(self, url, data=None, *args, **kwargs):
         return self._request("POST", url, data=data, *args, **kwargs)
 
-
     def _put(self, url, data=None, *args, **kwargs):
         return self._request("PUT", url, data=data, *args, **kwargs)
-
 
     def _patch(self, url, data=None, *args, **kwargs):
         return self._request("PATCH", url, data=data, *args, **kwargs)

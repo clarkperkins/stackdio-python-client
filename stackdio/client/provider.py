@@ -59,7 +59,7 @@ class ProviderMixin(HttpMixin):
 
 
     @endpoint("providers/")
-    def list_providers(self, provider_id):
+    def list_providers(self):
         """List all providers"""
         return self._get(endpoint, jsonify=True)['results']
 

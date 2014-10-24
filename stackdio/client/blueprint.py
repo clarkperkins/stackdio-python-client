@@ -13,42 +13,39 @@ class BlueprintMixin(HttpMixin):
 
         # check the provided blueprint to see if we need to look up any ids
         for host in blueprint["hosts"]:
-            if isinstance(host["size"], str):
+            if isinstance(host["size"], basestring):
                 host["size"] = self.get_instance_id(host["size"], provider)
 
-            if isinstance(host["zone"], str):
-                host["zone"] = self.get_zone(host["zone"], provider)
+            if isinstance(host["zone"], basestring):
+                host["zone"] = self.get_zone_id(host["zone"], provider)
 
-            if isinstance(host["cloud_profile"], str):
+            if isinstance(host["cloud_profile"], basestring):
                 host["cloud_profile"] = self.get_profile_id(host["cloud_profile"])
 
             for component in host["formula_components"]:
                 if isinstance(component["id"], (tuple, list)):
+                    formula_id = self.get_formula_id(component["id"][0])
+
                     component["id"] = self.get_component_id(
-                        self.get_formula(component["id"][0]),
+                        self.get_formula(formula_id),
                         component["id"][1])
 
         return self._post(endpoint, data=json.dumps(blueprint), jsonify=True)
-
-
 
     @endpoint("blueprints/")
     def list_blueprints(self):
         """Return info for a specific blueprint_id"""
         return self._get(endpoint, jsonify=True)['results']
 
-
     @endpoint("blueprints/{blueprint_id}/")
     def get_blueprint(self, blueprint_id):
         """Return info for a specific blueprint_id"""
         return self._get(endpoint, jsonify=True)
 
-
     @endpoint("blueprints/")
     def search_blueprints(self, **kwargs):
         """Return info for a specific blueprint_id"""
         return self._get(endpoint, params=kwargs, jsonify=True)['results']
-
 
     @deprecated
     @accepted_versions("<0.7")
