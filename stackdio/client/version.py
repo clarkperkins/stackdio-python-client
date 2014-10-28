@@ -22,8 +22,12 @@ import operator
 import re
 import warnings
 
-from .exceptions import (IncompatibleVersionException,
-                         InvalidVersionStringException)
+# for setup.py
+try:
+    from .exceptions import (IncompatibleVersionException,
+                             InvalidVersionStringException)
+except:
+    pass
 
 
 def _unsupported_function(func, current_version, accepted_versions):
