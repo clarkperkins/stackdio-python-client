@@ -32,7 +32,7 @@ class FormulaMixin(HttpMixin):
     @endpoint("formulas/{formula_id}/")
     def delete_formula(self, formula_id):
         """Delete formula with matching id"""
-        return self._delete(endpoint)
+        return self._delete(endpoint, jsonify=True)
 
     @endpoint("formulas/{formula_id}/action/")
     def update_formula(self, formula_id):
