@@ -20,7 +20,7 @@ class BlueprintMixin(HttpMixin):
                 host["zone"] = self.get_zone_id(host["zone"], provider)
 
             if isinstance(host["cloud_profile"], basestring):
-                host["cloud_profile"] = self.get_profile_id(host["cloud_profile"])
+                host["cloud_profile"] = self.get_profile_id(host["cloud_profile"], title=True)
 
             for component in host["formula_components"]:
                 if isinstance(component["id"], (tuple, list)):
@@ -46,6 +46,10 @@ class BlueprintMixin(HttpMixin):
     def search_blueprints(self, **kwargs):
         """Return info for a specific blueprint_id"""
         return self._get(endpoint, params=kwargs, jsonify=True)['results']
+
+    @endpoint("blueprints/{blueprint_id}")
+    def delete_blueprint(self, blueprint_id):
+        return self._delete(endpoint, jsonify=True)
 
     @deprecated
     @accepted_versions("<0.7")

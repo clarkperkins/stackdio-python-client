@@ -108,6 +108,9 @@ class HttpMixin(object):
         if none_on_404 and result.status_code == 404:
             return None
 
+        elif result.status_code == 204:
+            return None
+
         elif raise_for_status:
             try:
                 result.raise_for_status()
