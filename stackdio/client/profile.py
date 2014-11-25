@@ -75,4 +75,4 @@ class ProfileMixin(HttpMixin):
             if profile.get("slug" if not title else "title") == slug:
                 return profile.get("id")
 
-        return StackException("Provider %s not found" % slug)
+        return StackException("Profile %s not found" % slug)

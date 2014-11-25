@@ -22,7 +22,6 @@ from .http import HttpMixin, endpoint
 
 
 class FormulaMixin(HttpMixin):
-
     @endpoint("formulas/")
     def import_formula(self, formula_uri, public=True):
         """Import a formula"""
@@ -32,36 +31,40 @@ class FormulaMixin(HttpMixin):
         }
         return self._post(endpoint, data=json.dumps(data), jsonify=True)
 
-
     @endpoint("formulas/")
     def list_formulas(self):
         """Return all formulas"""
         return self._get(endpoint, jsonify=True)['results']
-
 
     @endpoint("formulas/{formula_id}/")
     def get_formula(self, formula_id):
         """Get a formula with matching id"""
         return self._get(endpoint, jsonify=True)
 
-
     @endpoint("formulas/")
     def search_formulas(self, **kwargs):
         """Get a formula with matching id"""
         return self._get(endpoint, params=kwargs, jsonify=True)['results']
-
 
     @endpoint("formulas/{formula_id}/")
     def delete_formula(self, formula_id):
         """Delete formula with matching id"""
         return self._delete(endpoint, jsonify=True)
 
-
     @endpoint("formulas/{formula_id}/action/")
     def update_formula(self, formula_id):
         """Delete formula with matching id"""
         return self._post(endpoint, json.dumps({"action": "update"}), jsonify=True)
 
+    def get_formula_id(self, title):
+        """Find a stack id"""
+
+        formulas = self.list_formulas()
+        for formula in formulas:
+            if formula.get("title") == title:
+                return formula.get("id")
+
+        raise StackException("Formula %s not found" % title)
 
     def get_component_id(self, formula, component_title):
         """Get the id for a component from formula_id that matches title"""

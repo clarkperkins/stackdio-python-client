@@ -19,6 +19,10 @@ class StackException(Exception):
     pass
 
 
+class BlueprintException(Exception):
+    pass
+
+
 class NoAdminException(Exception):
     pass
 
