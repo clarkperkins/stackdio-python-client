@@ -72,9 +72,12 @@ class RegionMixin(HttpMixin):
         """Get a zone id for title"""
 
         result = self._get(endpoint, jsonify=True)
+
+        type_id = self.get_provider_type_id(type_name)
         for zone in result['results']:
-            if zone.get("title") == title and \
-               zone.get("provider_type") == type_name:
-                return zone.get("id")
+            if zone.get("title") == title:
+                region = self._get(zone.get("region"), jsonify=True)
+                if region.get("provider_type") == type_id:
+                    return zone.get("id")
 
         raise StackException("Zone %s not found for %s" % (title, type_name))

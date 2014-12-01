@@ -19,7 +19,7 @@ import json
 import logging
 
 from .http import use_admin_auth, endpoint
-from .exceptions import StackException
+from .exceptions import BlueprintException, StackException
 
 from .blueprint import BlueprintMixin
 from .formula import FormulaMixin
@@ -57,11 +57,14 @@ class StackdIO(BlueprintMixin, FormulaMixin, ProfileMixin,
 
         _, self.version = _parse_version_string(self.get_version())
 
+    @endpoint("")
+    def get_root(self):
+        """Get the api root"""
+        return self._get(endpoint, jsonify=True)
 
     @endpoint("version/")
     def get_version(self):
         return self._get(endpoint, jsonify=True)['version']
-
 
     @use_admin_auth
     @endpoint("security_groups/")
@@ -76,6 +79,25 @@ class StackdIO(BlueprintMixin, FormulaMixin, ProfileMixin,
         }
         return self._post(endpoint, data=json.dumps(data), jsonify=True)
 
+    @endpoint("settings/")
+    def get_public_key(self):
+        """Get the public key for the logged in uesr"""
+        return self._get(endpoint, jsonify=True)['public_key']
+
+    @endpoint("settings/")
+    def set_public_key(self, public_key):
+        """Upload a public key for our user. public_key can be the actual key, a
+        file handle, or a path to a key file"""
+
+        if isinstance(public_key, file):
+            public_key = public_key.read()
+        elif isinstance(public_key, str) and os.path.exists(public_key):
+            public_key = open(public_key, "r").read()
+
+        data = {
+            "public_key": public_key
+        }
+        return self._put(endpoint, data=json.dumps(data), jsonify=True)
 
     @endpoint("instance_sizes/")
     def get_instance_id(self, instance_id, provider_type="ec2"):
