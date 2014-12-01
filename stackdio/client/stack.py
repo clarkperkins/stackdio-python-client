@@ -46,7 +46,7 @@ class StackMixin(HttpMixin):
         return self._get(endpoint, jsonify=True)
 
     @endpoint("stacks/")
-    def search_stacks(self, *kwargs):
+    def search_stacks(self, **kwargs):
         """Search for stacks that match the given criteria"""
         return self._get(endpoint, params=kwargs, jsonify=True)['results']
 
