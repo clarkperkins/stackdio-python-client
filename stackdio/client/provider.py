@@ -82,9 +82,9 @@ class ProviderMixin(HttpMixin):
 
 
     @endpoint("providers/{provider_id}/")
-    def get_provider(self, provider_id):
+    def get_provider(self, provider_id, none_on_404=False):
         """Return the provider that matches the given id"""
-        return self._get(endpoint, jsonify=True)
+        return self._get(endpoint, jsonify=True, none_on_404=none_on_404)
 
 
     @accepted_versions(">=0.6.1")

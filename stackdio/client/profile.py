@@ -46,9 +46,9 @@ class ProfileMixin(HttpMixin):
 
 
     @endpoint("profiles/{profile_id}/")
-    def get_profile(self, profile_id):
+    def get_profile(self, profile_id, none_on_404=False):
         """Return the profile that matches the given id"""
-        return self._get(endpoint, jsonify=True)
+        return self._get(endpoint, jsonify=True, none_on_404=none_on_404)
 
 
     @accepted_versions(">=0.6.1")
