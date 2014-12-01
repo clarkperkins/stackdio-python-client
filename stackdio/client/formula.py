@@ -37,9 +37,9 @@ class FormulaMixin(HttpMixin):
         return self._get(endpoint, jsonify=True)['results']
 
     @endpoint("formulas/{formula_id}/")
-    def get_formula(self, formula_id):
+    def get_formula(self, formula_id, none_on_404=False):
         """Get a formula with matching id"""
-        return self._get(endpoint, jsonify=True)
+        return self._get(endpoint, jsonify=True, none_on_404=none_on_404)
 
     @endpoint("formulas/")
     def search_formulas(self, **kwargs):

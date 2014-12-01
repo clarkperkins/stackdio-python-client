@@ -41,9 +41,9 @@ class StackMixin(HttpMixin):
         return self._get(endpoint, jsonify=True)['results']
 
     @endpoint("stacks/{stack_id}/")
-    def get_stack(self, stack_id):
+    def get_stack(self, stack_id, none_on_404=False):
         """Get stack info"""
-        return self._get(endpoint, jsonify=True)
+        return self._get(endpoint, jsonify=True, none_on_404=none_on_404)
 
     @endpoint("stacks/")
     def search_stacks(self, **kwargs):
@@ -154,7 +154,7 @@ class StackMixin(HttpMixin):
             for group in rules:
                 if group.get("blueprint_host_definition").get("title") == title:
                     return group.get("id")
-        except TypeError, e:
+        except TypeError:
             pass
 
         raise StackException("Access Rule %s not found" % title)
@@ -168,4 +168,3 @@ class StackMixin(HttpMixin):
         """Add an access rule to a group"""
 
         return self._put(endpoint, jsonify=True, data=json.dumps(data))
-

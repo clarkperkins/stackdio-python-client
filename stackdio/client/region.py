@@ -29,6 +29,11 @@ class RegionMixin(HttpMixin):
         return self._get(endpoint, jsonify=True)['results']
 
 
+    @endpoint("regions/{region_id}")
+    def get_region(self, region_id, none_on_404=False):
+        return self._get(endpoint, jsonify=True, none_on_404=none_on_404)
+
+
     @accepted_versions(">=0.6.1")
     @endpoint("regions/")
     def search_regions(self, **kwargs):
@@ -58,6 +63,9 @@ class RegionMixin(HttpMixin):
     def list_zones(self):
         return self._get(endpoint, jsonify=True)['results']
 
+    @endpoint("zones/{zone_id}")
+    def get_zone(self, zone_id, none_on_404=False):
+        return self._get(endpoint, jsonify=True, none_on_404=none_on_404)
 
     @accepted_versions(">=0.6.1")
     @endpoint("zones/")
