@@ -40,7 +40,7 @@ class BlueprintMixin(HttpMixin):
                 host["cloud_profile"] = self.get_profile_id(host["cloud_profile"], title=True)  # noqa
 
             for component in host["formula_components"]:
-                if isinstance(component["id"], (tuple, list)):
+                if not component.get("sls_path") and isinstance(component["id"], (tuple, list)):
                     formula_id = self.get_formula_id(component["id"][0])
 
                     component["id"] = self.get_component_id(
