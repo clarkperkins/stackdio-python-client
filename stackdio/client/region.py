@@ -60,8 +60,14 @@ class RegionMixin(HttpMixin):
         type_id = self.get_provider_type_id(type_name)
         for zone in result['results']:
             if zone.get("title") == title:
-                region = self._get(zone.get("region"), jsonify=True)
-                if region.get("provider_type") == type_id:
-                    return zone.get("id")
+                if 'region' in zone:
+                    # For version 0.6.1
+                    region = self._get(zone['region'], jsonify=True)
+                    if region.get("provider_type") == type_id:
+                        return zone.get("id")
+                elif 'provider_type' in zone:
+                    # For versions 0.5.*
+                    if zone['provider_type'] == type_id:
+                        return zone.get("id")
 
         raise StackException("Zone %s not found for %s" % (title, type_name))
