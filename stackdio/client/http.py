@@ -15,6 +15,8 @@
 # limitations under the License.
 #
 
+from __future__ import print_function
+
 import logging
 import requests
 
@@ -96,7 +98,7 @@ class HttpMixin(object):
 
     HEADERS = {
         'json': {"content-type": "application/json"},
-        #'xml': {"content-type": "application/xml"}
+        'xml': {"content-type": "application/xml"}
     }
 
     def __init__(self, auth=None, verify=True):
@@ -105,6 +107,21 @@ class HttpMixin(object):
             'verify': verify,
         }
         self._http_log = logging.getLogger(__name__)
+
+        if not verify:
+            if self._http_log.handlers:
+                self._http_log.warn("You have chosen not to verify ssl connections.")
+                self._http_log.warn("This is insecure, but it's your choice.")
+                self._http_log.warn("This has been your single warning.")
+            else:
+                print("You have chosen not to verify ssl connections.")
+                print("This is insecure, but it's your choice.")
+                print("This has been your single warning.")
+
+            from requests.packages.urllib3 import disable_warnings
+            disable_warnings()
+
+
 
     def _request(self, verb, url, quiet=False,
                  none_on_404=False, jsonify=False, raise_for_status=True,

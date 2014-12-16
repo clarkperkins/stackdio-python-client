@@ -39,7 +39,7 @@ class StackdIO(BlueprintMixin, FormulaMixin, ProfileMixin,
 
     def __init__(self, protocol="https", host="localhost", port=443,
                  base_url=None, auth=None, auth_admin=None,
-                 verify=False):
+                 verify=True):
         """auth_admin is optional, only needed for creating provider, profile,
         and base security groups"""
 
