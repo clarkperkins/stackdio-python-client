@@ -27,6 +27,11 @@ from .exceptions import NoAdminException
 
 logger = logging.getLogger(__name__)
 
+HTTP_INSECURE_MESSAGE = "\n".join([
+    "You have chosen not to verify ssl connections.",
+    "This is insecure, but it's your choice.",
+    "This has been your single warning."])
+
 
 def use_admin_auth(func):
 
@@ -110,13 +115,9 @@ class HttpMixin(object):
 
         if not verify:
             if self._http_log.handlers:
-                self._http_log.warn("You have chosen not to verify ssl connections.")
-                self._http_log.warn("This is insecure, but it's your choice.")
-                self._http_log.warn("This has been your single warning.")
+                self._http_log.warn(HTTP_INSECURE_MESSAGE)
             else:
-                print("You have chosen not to verify ssl connections.")
-                print("This is insecure, but it's your choice.")
-                print("This has been your single warning.")
+                print(HTTP_INSECURE_MESSAGE)
 
             from requests.packages.urllib3 import disable_warnings
             disable_warnings()
