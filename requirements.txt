@@ -1,3 +1,2 @@
 simplejson
-requests
-urllib3>=1.9
+requests>=2.4.0
