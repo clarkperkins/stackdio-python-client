@@ -20,6 +20,7 @@ import sys
 
 from setuptools import setup, find_packages
 from pip.req import parse_requirements
+from pip.download import PipSession
 
 
 def test_python_version():
@@ -32,7 +33,7 @@ def test_python_version():
 
 def load_pip_requirements(fp):
     reqs, deps = [], []
-    for r in parse_requirements(fp):
+    for r in parse_requirements(fp, session=PipSession()):
         if r.url is not None:
             deps.append(str(r.url))
         reqs.append(str(r.req))
