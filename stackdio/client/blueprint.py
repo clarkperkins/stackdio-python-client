@@ -33,7 +33,8 @@ class BlueprintMixin(HttpMixin):
             if isinstance(host["size"], basestring):
                 host["size"] = self.get_instance_id(host["size"], provider)
 
-            if isinstance(host["zone"], basestring):
+            # zone isn't required if you provide a subnet_id
+            if 'zone' in host and isinstance(host["zone"], basestring):
                 host["zone"] = self.get_zone_id(host["zone"], provider)
 
             if isinstance(host["cloud_profile"], basestring):
