@@ -48,7 +48,7 @@ class BlueprintMixin(HttpMixin):
                         self.get_formula(formula_id),
                         component["id"][1])
 
-        return self._post(endpoint, data=json.dumps(blueprint), jsonify=True)
+        return self._post(endpoint, data=json.dumps(blueprint), jsonify=True, raise_for_status=False)
 
     @endpoint("blueprints/")
     def list_blueprints(self):
