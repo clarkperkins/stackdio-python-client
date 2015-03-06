@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-__version__ = "0.6.0.client.4"
+__version__ = "0.6.0.client.5"
 
 from functools import wraps
 import operator
