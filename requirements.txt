@@ -1,2 +1,2 @@
 simplejson
-requests>=2.4.0
+requests>=2.4.0,<2.6.0
