@@ -15,8 +15,6 @@
 # limitations under the License.
 #
 
-__version__ = "0.6.0.client.6"
-
 from functools import wraps
 import operator
 import re
@@ -24,10 +22,12 @@ import warnings
 
 # for setup.py
 try:
-    from .exceptions import (IncompatibleVersionException,
-                             InvalidVersionStringException)
-except:
+    from .exceptions import IncompatibleVersionException, InvalidVersionStringException
+except Exception:
     pass
+
+
+__version__ = '0.7.0.dev'
 
 
 def _unsupported_function(func, current_version, accepted_versions):
@@ -101,9 +101,11 @@ def accepted_versions(*versions):
 
 
 def deprecated(func):
-    '''This is a decorator which can be used to mark functions
+    """
+    This is a decorator which can be used to mark functions
     as deprecated. It will result in a warning being emitted
-    when the function is used.'''
+    when the function is used.
+    """
 
     @wraps(func)
     def wrapper(*args, **kwargs):

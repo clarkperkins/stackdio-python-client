@@ -23,8 +23,8 @@ from .exceptions import BlueprintException, StackException
 
 from .blueprint import BlueprintMixin
 from .formula import FormulaMixin
-from .profile import ProfileMixin
-from .provider import ProviderMixin
+from .account import AccountMixin
+from .image import ImageMixin
 from .region import RegionMixin
 from .settings import SettingsMixin
 from .stack import StackMixin
@@ -34,8 +34,8 @@ from .version import _parse_version_string
 logger = logging.getLogger(__name__)
 
 
-class StackdIO(BlueprintMixin, FormulaMixin, ProfileMixin,
-               ProviderMixin, RegionMixin, StackMixin, SettingsMixin):
+class StackdIO(BlueprintMixin, FormulaMixin, AccountMixin,
+               ImageMixin, RegionMixin, StackMixin, SettingsMixin):
 
     def __init__(self, protocol="https", host="localhost", port=443,
                  base_url=None, auth=None, auth_admin=None,
