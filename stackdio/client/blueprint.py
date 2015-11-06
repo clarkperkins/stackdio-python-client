@@ -33,13 +33,13 @@ class BlueprintMixin(HttpMixin):
         if 'formula_versions' in blueprint:
             all_formulas = self.list_formulas()
 
-            used_formulas = set()
+            used_formulas = []
 
             for formula_version in blueprint['formula_versions']:
                 for formula in all_formulas:
                     if formula['uri'] == formula_version['formula']:
                         formula['version'] = formula_version['version']
-                        used_formulas.add(formula)
+                        used_formulas.append(formula)
                         break
 
             for formula in used_formulas:
