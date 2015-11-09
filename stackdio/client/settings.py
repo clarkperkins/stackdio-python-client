@@ -23,7 +23,7 @@ from .http import HttpMixin, endpoint
 
 class SettingsMixin(HttpMixin):
 
-    @endpoint("settings/")
+    @endpoint("user/")
     def set_public_key(self, public_key):
         """Upload a public key for our user. public_key can be the actual key, a
         file handle, or a path to a key file"""
@@ -35,6 +35,8 @@ class SettingsMixin(HttpMixin):
             public_key = open(public_key, "r").read()
 
         data = {
-            "public_key": public_key
+            "settings": {
+                "public_key": public_key,
+            }
         }
-        return self._put(endpoint, data=json.dumps(data), jsonify=True)
+        return self._patch(endpoint, data=json.dumps(data), jsonify=True)

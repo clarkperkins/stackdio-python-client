@@ -19,7 +19,7 @@ import json
 import logging
 
 from .http import use_admin_auth, endpoint
-from .exceptions import BlueprintException, StackException
+from .exceptions import BlueprintException, StackException, IncompatibleVersionException
 
 from .blueprint import BlueprintMixin
 from .formula import FormulaMixin
@@ -56,6 +56,10 @@ class StackdIO(BlueprintMixin, FormulaMixin, AccountMixin,
         self.auth_admin = auth_admin
 
         _, self.version = _parse_version_string(self.get_version())
+
+        if self.version[0] != 0 or self.version[1] != 7:
+            raise IncompatibleVersionException('Server version {0}.{1}.{2} not '
+                                               'supported.'.format(**self.version))
 
     @endpoint("")
     def get_root(self):

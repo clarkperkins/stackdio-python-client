@@ -17,9 +17,7 @@
 
 import json
 
-from .exceptions import StackException
 from .http import HttpMixin, endpoint
-from .version import accepted_versions, deprecated
 
 
 class BlueprintMixin(HttpMixin):
@@ -76,15 +74,3 @@ class BlueprintMixin(HttpMixin):
     @endpoint("blueprints/{blueprint_id}")
     def delete_blueprint(self, blueprint_id):
         return self._delete(endpoint, jsonify=True)
-
-    @deprecated
-    @accepted_versions("<0.7")
-    def get_blueprint_id(self, title):
-        """Get the id for a blueprint that matches title"""
-
-        blueprints = self.search_blueprints(title=title)
-
-        if not len(blueprints):
-            raise StackException("Blueprint %s not found" % title)
-
-        return blueprints[0]['id']

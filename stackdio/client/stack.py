@@ -19,7 +19,7 @@ import json
 
 from .exceptions import StackException
 from .http import HttpMixin, endpoint
-from .version import accepted_versions, deprecated
+from .version import deprecated
 
 
 class StackMixin(HttpMixin):
@@ -81,18 +81,6 @@ class StackMixin(HttpMixin):
         else:
             return result
 
-    @deprecated
-    @accepted_versions("<0.7")
-    def get_stack_id(self, title):
-        """Find a stack id"""
-
-        stacks = self.list_stacks()
-        for stack in stacks:
-            if stack.get("title") == title:
-                return stack.get("id")
-
-        raise StackException("Stack %s not found" % title)
-
     @endpoint("stacks/{stack_id}/hosts/")
     def get_stack_hosts(self, stack_id):
         """Get a list of all stack hosts"""
@@ -144,7 +132,6 @@ class StackMixin(HttpMixin):
         return self._get(endpoint, jsonify=True)['results']
 
     @deprecated
-    @accepted_versions("<0.7")
     def get_access_rule_id(self, stack_id, title):
         """Find an access rule id"""
 

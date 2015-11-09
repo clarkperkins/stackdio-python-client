@@ -17,9 +17,7 @@
 
 import json
 
-from .exceptions import StackException
-from .http import HttpMixin, endpoint, use_admin_auth
-from .version import accepted_versions, deprecated
+from .http import HttpMixin, endpoint
 
 
 class AccountMixin(HttpMixin):
@@ -29,26 +27,11 @@ class AccountMixin(HttpMixin):
         """List all providers"""
         return self._get(endpoint, jsonify=True)['results']
 
-    @accepted_versions(">=0.6.1")
     @endpoint("cloud/providers/")
     def search_providers(self, provider_id):
         """List all providers"""
         return self._get(endpoint, jsonify=True)['results']
 
-    @deprecated
-    @accepted_versions("<0.7")
-    @endpoint("cloud/providers/")
-    def get_provider_id(self, type_name):
-        """Get the id for the provider specified by type_name"""
-
-        result = self._get(endpoint, jsonify=True)
-        for provider in result['results']:
-            if provider.get("type_name") == type_name:
-                return provider.get("id")
-
-        raise StackException("Provider type %s not found" % type_name)
-
-    @use_admin_auth
     @endpoint("cloud/accounts/")
     def create_account(self, **kwargs):
         """Create an account"""
@@ -81,7 +64,6 @@ class AccountMixin(HttpMixin):
         """Return the account that matches the given id"""
         return self._get(endpoint, jsonify=True, none_on_404=none_on_404)
 
-    @accepted_versions(">=0.6.1")
     @endpoint("accounts/")
     def search_accounts(self, account_id):
         """List all accounts"""
@@ -91,17 +73,3 @@ class AccountMixin(HttpMixin):
     def delete_account(self, account_id):
         """List all accounts"""
         return self._delete(endpoint, jsonify=True)['results']
-
-    @deprecated
-    @accepted_versions("<0.7")
-    def get_account_id(self, slug, title=False):
-        """Get the id for a account that matches slug. If title is True will
-        look at title instead."""
-
-        accounts = self.list_accounts()
-
-        for account in accounts:
-            if account.get("slug" if not title else "title") == slug:
-                return account.get("id")
-
-        raise StackException("Provider %s not found" % slug)

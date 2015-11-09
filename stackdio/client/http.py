@@ -122,8 +122,6 @@ class HttpMixin(object):
             from requests.packages.urllib3 import disable_warnings
             disable_warnings()
 
-
-
     def _request(self, verb, url, quiet=False,
                  none_on_404=False, jsonify=False, raise_for_status=True,
                  *args, **kwargs):

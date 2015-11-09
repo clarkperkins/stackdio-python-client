@@ -17,7 +17,6 @@
 
 import json
 
-from .exceptions import StackException
 from .http import HttpMixin, endpoint
 
 
@@ -55,23 +54,3 @@ class FormulaMixin(HttpMixin):
     def update_formula(self, formula_id):
         """Delete formula with matching id"""
         return self._post(endpoint, json.dumps({"action": "update"}), jsonify=True)
-
-    def get_formula_id(self, title):
-        """Find a stack id"""
-
-        formulas = self.list_formulas()
-        for formula in formulas:
-            if formula.get("title") == title:
-                return formula.get("id")
-
-        raise StackException("Formula %s not found" % title)
-
-    def get_component_id(self, formula, component_title):
-        """Get the id for a component from formula_id that matches title"""
-
-        for component in formula.get("components"):
-            if component.get("title") == component_title:
-                return component.get("id")
-
-        raise StackException("Component %s not found for formula %s" %
-                             (component_title, formula.get("title")))

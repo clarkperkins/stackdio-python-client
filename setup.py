@@ -53,7 +53,7 @@ if __name__ == "__main__":
     # Call the setup method from setuptools that does all the heavy lifting
     # of packaging stackdio-client
     setup(
-        name='stackdio-client',
+        name='stackdio',
         version=__version__,
         url='http://stackd.io',
         author='Digital Reasoning Systems, Inc.',
@@ -67,7 +67,7 @@ if __name__ == "__main__":
         install_requires=requirements,
         dependency_links=[],
         classifiers=[
-            'Development Status :: 3 - Alpha',
+            'Development Status :: 4 - Beta',
             'Environment :: Web Environment',
             'Framework :: Django',
             'Intended Audience :: Developers',
