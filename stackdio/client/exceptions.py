@@ -15,6 +15,7 @@
 # limitations under the License.
 #
 
+
 class StackException(Exception):
     pass
 

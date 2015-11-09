@@ -19,12 +19,12 @@ import json
 import logging
 
 from .http import use_admin_auth, endpoint
-from .exceptions import BlueprintException, StackException
+from .exceptions import BlueprintException, StackException, IncompatibleVersionException
 
 from .blueprint import BlueprintMixin
 from .formula import FormulaMixin
-from .profile import ProfileMixin
-from .provider import ProviderMixin
+from .account import AccountMixin
+from .image import ImageMixin
 from .region import RegionMixin
 from .settings import SettingsMixin
 from .stack import StackMixin
@@ -34,8 +34,8 @@ from .version import _parse_version_string
 logger = logging.getLogger(__name__)
 
 
-class StackdIO(BlueprintMixin, FormulaMixin, ProfileMixin,
-               ProviderMixin, RegionMixin, StackMixin, SettingsMixin):
+class StackdIO(BlueprintMixin, FormulaMixin, AccountMixin,
+               ImageMixin, RegionMixin, StackMixin, SettingsMixin):
 
     def __init__(self, protocol="https", host="localhost", port=443,
                  base_url=None, auth=None, auth_admin=None,
@@ -56,6 +56,10 @@ class StackdIO(BlueprintMixin, FormulaMixin, ProfileMixin,
         self.auth_admin = auth_admin
 
         _, self.version = _parse_version_string(self.get_version())
+
+        if self.version[0] != 0 or self.version[1] != 7:
+            raise IncompatibleVersionException('Server version {0}.{1}.{2} not '
+                                               'supported.'.format(**self.version))
 
     @endpoint("")
     def get_root(self):
@@ -79,10 +83,10 @@ class StackdIO(BlueprintMixin, FormulaMixin, ProfileMixin,
         }
         return self._post(endpoint, data=json.dumps(data), jsonify=True)
 
-    @endpoint("settings/")
+    @endpoint("user/")
     def get_public_key(self):
-        """Get the public key for the logged in uesr"""
-        return self._get(endpoint, jsonify=True)['public_key']
+        """Get the public key for the logged in user"""
+        return self._get(endpoint, jsonify=True)['settings']['public_key']
 
     @endpoint("settings/")
     def set_public_key(self, public_key):

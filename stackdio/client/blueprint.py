@@ -17,9 +17,7 @@
 
 import json
 
-from .exceptions import StackException
 from .http import HttpMixin, endpoint
-from .version import accepted_versions, deprecated
 
 
 class BlueprintMixin(HttpMixin):
@@ -28,25 +26,33 @@ class BlueprintMixin(HttpMixin):
     def create_blueprint(self, blueprint, provider="ec2"):
         """Create a blueprint"""
 
+        formula_map = {}
+
+        if 'formula_versions' in blueprint:
+            all_formulas = self.list_formulas()
+
+            used_formulas = []
+
+            for formula_version in blueprint['formula_versions']:
+                for formula in all_formulas:
+                    if formula['uri'] == formula_version['formula']:
+                        formula['version'] = formula_version['version']
+                        used_formulas.append(formula)
+                        break
+
+            for formula in used_formulas:
+                components = self._get(
+                    '{0}?version={1}'.format(formula['components'], formula['version']),
+                    jsonify=True,
+                )['results']
+                for component in components:
+                    formula_map[component['sls_path']] = formula['uri']
+
         # check the provided blueprint to see if we need to look up any ids
-        for host in blueprint["hosts"]:
-            if isinstance(host["size"], basestring):
-                host["size"] = self.get_instance_id(host["size"], provider)
-
-            # zone isn't required if you provide a subnet_id
-            if 'zone' in host and isinstance(host["zone"], basestring):
-                host["zone"] = self.get_zone_id(host["zone"], provider)
-
-            if isinstance(host["cloud_profile"], basestring):
-                host["cloud_profile"] = self.get_profile_id(host["cloud_profile"])  # noqa
-
-            for component in host["formula_components"]:
-                if not component.get("sls_path") and isinstance(component["id"], (tuple, list)):
-                    formula_id = self.get_formula_id(component["id"][0])
-
-                    component["id"] = self.get_component_id(
-                        self.get_formula(formula_id),
-                        component["id"][1])
+        for host in blueprint['host_definitions']:
+            for component in host['formula_components']:
+                if component['sls_path'] in formula_map:
+                    component['formula'] = formula_map[component['sls_path']]
 
         return self._post(endpoint, data=json.dumps(blueprint), jsonify=True, raise_for_status=False)
 
@@ -68,15 +74,3 @@ class BlueprintMixin(HttpMixin):
     @endpoint("blueprints/{blueprint_id}")
     def delete_blueprint(self, blueprint_id):
         return self._delete(endpoint, jsonify=True)
-
-    @deprecated
-    @accepted_versions("<0.7")
-    def get_blueprint_id(self, title):
-        """Get the id for a blueprint that matches title"""
-
-        blueprints = self.search_blueprints(title=title)
-
-        if not len(blueprints):
-            raise StackException("Blueprint %s not found" % title)
-
-        return blueprints[0]['id']
