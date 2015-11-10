@@ -7,7 +7,7 @@ import yaml
 from cmd2 import Cmd
 
 from stackdio.client.exceptions import StackException
-from stackdio.blueprints.generator import BlueprintGenerator, BlueprintException
+from stackdio.cli.blueprints.generator import BlueprintGenerator, BlueprintException
 
 
 class BlueprintNotFound(Exception):

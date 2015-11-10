@@ -84,7 +84,7 @@ if __name__ == "__main__":
         entry_points={
             'console_scripts': [
                 'stackdio-cli=stackdio.cli:main',
-                'blueprint-generator=stackdio.blueprints:main',
+                'blueprint-generator=stackdio.cli.blueprints:main',
             ],
         },
         classifiers=[

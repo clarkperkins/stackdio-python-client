@@ -20,6 +20,7 @@ class PublicKeyNotFound(Exception):
 class BootstrapMixin(Cmd):
 
     def __init__(self):
+        super(BootstrapMixin, self).__init__()
 
         # quieting down pylint
         self.has_public_key = None

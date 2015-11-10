@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-__version__ = '0.2.dev'
-
 import argparse
 import json
 import os
