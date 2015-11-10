@@ -1,0 +1,8 @@
+blueprints:
+  cdh4-3node: cdh4-3node.json
+  cdh5-3node: cdh5-3node.json
+
+formulas:
+  java: https://github.com/stackdio-formulas/java-formula.git
+  cdh4: https://github.com/stackdio-formulas/cdh4-formula.git
+  cdh5: https://github.com/stackdio-formulas/cdh5-formula.git

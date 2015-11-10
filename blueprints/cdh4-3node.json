@@ -1,0 +1,191 @@
+{
+  "public": false,
+  "properties": {
+    "java": {
+      "enable_jce": false,
+      "oracle": {
+        "cookies": "gpw_e24=http%3A%2F%2Fwww.oracle.com%2F; oraclelicense=accept-securebackup-cookie",
+        "staging": "/tmp/.java_staging",
+        "jdk7": {
+          "rpm": "jdk-1.7.0_45",
+          "uri": "http://download.oracle.com/otn-pub/java/jdk/7u45-b18/jdk-7u45-linux-x64.rpm"
+        }
+      }
+    },
+    "cdh4": {
+      "landing_page": true,
+      "hue": {
+        "secret_key": "CHANGE_THIS",
+        "start_service": true
+      },
+      "mapred": {
+        "system_dir": "/hadoop/system/mapred",
+        "map_tasks_max": 5,
+        "reduce_tasks_max": 3,
+        "local_dir": "/mnt/hadoop/mapred/local",
+        "child_java_opts": "-Xmx2000m",
+        "reduce_tasks": 6,
+        "child_ulimit": 8000000
+      },
+      "zookeeper": {
+        "data_dir": "/mnt/zk/data",
+        "start_service": true
+      },
+      "max_log_index": 1,
+      "dfs": {
+        "name_dir": "/mnt/hadoop/hdfs/nn",
+        "block_size": 268435456,
+        "data_dir": "/mnt/hadoop/hdfs/data",
+        "permissions": true
+      },
+      "version": 4,
+      "datanode": {
+        "start_service": true
+      },
+      "hive": {
+        "home": "/usr/lib/hive",
+        "metastore_password": "CHANGE_THIS",
+        "start_service": true,
+        "user": "hive"
+      },
+      "io": {
+        "sort_mb": 250,
+        "sort_factor": 25
+      },
+      "oozie": {
+        "start_service": true
+      },
+      "namenode": {
+        "start_service": true
+      },
+      "hbase": {
+        "region_initial_heap": "1024m",
+        "region_max_heap": "1024m",
+        "tmp_dir": "/mnt/hbase/tmp",
+        "start_service": true,
+        "master_young_gen": "256m",
+        "replication": 3,
+        "master_initial_heap": "1024m",
+        "manage_zk": true,
+        "log_dir": "/mnt/hbase/logs",
+        "region_young_gen": "256m",
+        "master_max_heap": "1024m",
+        "jute_maxbuffer": 1000000
+      },
+      "impala": {
+        "version": "1.2.3",
+        "start_service": true
+      }
+    }
+  },
+  "hosts": [
+    {
+      "count": 1,
+      "description": "NameNode and Master",
+      "zone": "us-east-1d",
+      "title": "NameNode and Master",
+      "hostname_template": "{namespace}-nn",
+      "cloud_profile": "TO_BE_CHANGED",
+      "formula_components": [
+        {
+          "id": [
+            "OpenJDK and Oracle Java",
+            "Oracle Java 7 JDK"
+          ],
+          "order": 0
+        },
+        {
+          "id": [
+            "CDH4 Salt Formula",
+            "NameNode"
+          ],
+          "order": 1
+        },
+        {
+          "id": [
+            "CDH4 Salt Formula",
+            "HBase Master"
+          ],
+          "order": 3
+        },
+        {
+          "id": [
+            "CDH4 Salt Formula",
+            "Oozie"
+          ],
+          "order": 5
+        },
+        {
+          "id": [
+            "CDH4 Salt Formula",
+            "Pig"
+          ],
+          "order": 6
+        },
+        {
+          "id": [
+            "CDH4 Salt Formula",
+            "Hive"
+          ],
+          "order": 7
+        },
+        {
+          "id": [
+            "CDH4 Salt Formula",
+            "Impala State Store"
+          ],
+          "order": 8
+        },
+        {
+          "id": [
+            "CDH4 Salt Formula",
+            "Hue"
+          ],
+          "order": 10
+        }
+      ],
+      "size": "m2.2xlarge"
+    },
+    {
+      "count": 2,
+      "description": "DataNodes and Regionservers.",
+      "zone": "us-east-1d",
+      "title": "DataNodes and RegionServers",
+      "hostname_template": "{namespace}-dn-{index}",
+      "cloud_profile": "TO_BE_CHANGED",
+      "formula_components": [
+        {
+          "id": [
+            "OpenJDK and Oracle Java",
+            "Oracle Java 7 JDK"
+          ],
+          "order": 0
+        },
+        {
+          "id": [
+            "CDH4 Salt Formula",
+            "DataNode"
+          ],
+          "order": 2
+        },
+        {
+          "id": [
+            "CDH4 Salt Formula",
+            "HBase RegionServer"
+          ],
+          "order": 4
+        },
+        {
+          "id": [
+            "CDH4 Salt Formula",
+            "Impala Server"
+          ],
+          "order": 9
+        }
+      ],
+      "size": "m2.2xlarge"
+    }
+  ],
+  "description": "3 node stack with CDH 4",
+  "title": "cdh4-3node"
+}
