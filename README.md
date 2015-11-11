@@ -23,32 +23,31 @@ but in short you can install it on most systems like:
 
 Once you've got it, installing this tool goes something like:
 
-    mkvirtualenv stackdio-tooling
+    mkvirtualenv stackdio-client
 
     # assuming you are in whatever dir you cloned this repo to:
-    pip install --process-dependency-links .
+    pip install .
 
-** The --process-dependency-links flag is only needed in pip 1.5.6 **
 You'll see a few things scrolling by, but should be set after this.  To use 
 this later, you'll need to re-activate the virtualenv like:
 
-    workon stackdio-tooling
+    workon stackdio-client
 
 Whenever it's activated, `stackdio-cli` should be on your path.
 
 ## First Use
 The first time that you fire up `stackdio-cli`, you'll need to run the
-`initial-setup` command.  This will prompt you for your LDAP username and
+`initial_setup` command.  This will prompt you for your LDAP username and
 password, and store them securely in your OS keychain for later use.  It will
 import some standard formula, and create a few commonly used blueprints.
 
     $ stackdio-cli
-    None @ https://stackd.corp.digitalreasoning.com/api/
+    None @ None
     > initial_setup
     # YOU WILL BE WALKED THROUGH A SIMPLE SET OF QUESTIONS
 
 ## Stack Operations
-All of the following assume that you have run `initial-setup` successfully.  To
+All of the following assume that you have run `initial_setup` successfully.  To
 launch the cli, simply type:
 
     $ stackdio-cli
@@ -64,7 +63,7 @@ included with this you do:
     > stacks launch cdh450-ipa-3 MYSTACKNAME
 
 **NOTE:** To avoid DNS namespace collisions, the stack name needs to be unique.
-An easy way to ensure this is to include your name in the stack name. 
+An easy way to ensure this is to include your name in the stack name.
 
 ### Deleting Stacks
 When you are done with a stack you can delete it.  This is destructive and
@@ -98,10 +97,7 @@ There are various logs available that you can access with the `stacks logs`
 command.
 
 ## What's Next?
-For anything not covered by this tool, you'll need to use the [web UI] or 
-[API] directly.  See someone on the [pi team] with specific questions.
+For anything not covered by this tool, you'll need to use the stackdio-server web UI or 
+API directly.  For more information on that, check out http://docs.stackd.io.
 
 [virtualenvwrapper]: https://pypi.python.org/pypi/virtualenvwrapper
-[web UI]: https://stackd.corp.digitalreasoning.com
-[API]: https://stackd.corp.digitalreasoning.com/api
-[pi team]: mailto:pi@digitalreasoning.com?subject=stackd.io%20questions
