@@ -3,7 +3,7 @@ import os
 import json
 import sys
 
-from stackdio.blueprints.generator import BlueprintException, BlueprintGenerator
+from stackdio.cli.blueprints.generator import BlueprintException, BlueprintGenerator
 
 
 def main():

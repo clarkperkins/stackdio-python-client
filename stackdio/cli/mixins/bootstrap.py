@@ -20,8 +20,6 @@ class PublicKeyNotFound(Exception):
 class BootstrapMixin(Cmd):
 
     def __init__(self):
-        super(BootstrapMixin, self).__init__()
-
         # quieting down pylint
         self.has_public_key = None
         self.validated = False
@@ -98,28 +96,6 @@ class BootstrapMixin(Cmd):
 
         self._save_config()
         self._setprompt()
-
-        if self.validated:
-            bootstrap = raw_input("Bootstrap your account now (y/n)? ")
-            if bootstrap not in ["y", "Y"]:
-                return
-            self.do_bootstrap()
-
-            print(self.colorize("""
-## 
-## Success!  You're ready to start using stackd.io.  Try running
-## 'help' to see what all is available here.  You can also go to
-## {0} to use the UI.
-##
-                """.format(
-                    self.config["url"][0:self.config["url"].find("api/")]), 
-                "green"))
-            
-        else:
-            print(self.colorize(
-                "Unable to bootstrap your account",
-                "red"))
-            return
 
     def do_bootstrap(self, args=None):
         """Bootstrap an account with predefined formulas and blueprints"""

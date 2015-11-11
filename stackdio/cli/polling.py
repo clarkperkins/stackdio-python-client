@@ -2,8 +2,10 @@
 import sys
 import time
 
+
 class TimeoutException(Exception):
     pass
+
 
 def poll_and_wait(func, args=None, sleep_time=2, max_time=120):
     """Execute func in increments of sleep_time for no more than max_time.
