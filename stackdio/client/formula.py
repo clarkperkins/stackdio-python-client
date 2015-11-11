@@ -15,42 +15,48 @@
 # limitations under the License.
 #
 
-import json
-
-from .http import HttpMixin, endpoint
+from .http import HttpMixin, get, post, delete
 
 
 class FormulaMixin(HttpMixin):
-    @endpoint("formulas/")
-    def import_formula(self, formula_uri, public=True):
+    @post('formulas/')
+    def import_formula(self, formula_uri, git_username=None, git_password=None, access_token=None):
         """Import a formula"""
         data = {
-            "uri": formula_uri,
-            "public": public,
+            'uri': formula_uri,
         }
-        return self._post(endpoint, data=json.dumps(data), jsonify=True)
 
-    @endpoint("formulas/")
+        if git_username:
+            data['git_username'] = git_username
+            data['git_password'] = git_password
+            data['access_token'] = False
+        elif access_token:
+            data['git_username'] = access_token
+            data['access_token'] = True
+
+        return data
+
+    @get('formulas/', paginate=True)
     def list_formulas(self):
         """Return all formulas"""
-        return self._get(endpoint, jsonify=True)['results']
+        pass
 
-    @endpoint("formulas/{formula_id}/")
-    def get_formula(self, formula_id, none_on_404=False):
+    @get('formulas/{formula_id}/')
+    def get_formula(self, formula_id):
         """Get a formula with matching id"""
-        return self._get(endpoint, jsonify=True, none_on_404=none_on_404)
+        pass
 
-    @endpoint("formulas/")
+    @get('formulas/', paginate=True)
     def search_formulas(self, **kwargs):
         """Get a formula with matching id"""
-        return self._get(endpoint, params=kwargs, jsonify=True)['results']
+        pass
 
-    @endpoint("formulas/{formula_id}/")
+    @delete('formulas/{formula_id}/')
     def delete_formula(self, formula_id):
         """Delete formula with matching id"""
-        return self._delete(endpoint, jsonify=True)
+        pass
 
-    @endpoint("formulas/{formula_id}/action/")
+    @post('formulas/{formula_id}/action/')
     def update_formula(self, formula_id):
-        """Delete formula with matching id"""
-        return self._post(endpoint, json.dumps({"action": "update"}), jsonify=True)
+        """Update the formula"""
+        return {"action": "update"}

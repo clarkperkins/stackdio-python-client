@@ -15,42 +15,38 @@
 # limitations under the License.
 #
 
-import json
-
-from .http import HttpMixin, endpoint
+from .http import HttpMixin, get, post, delete
 
 
 class ImageMixin(HttpMixin):
 
-    @endpoint("cloud/images/")
-    def create_image(self, title, image_id, ssh_user, cloud_provider,
-                       default_instance_size=None):
+    @post('cloud/images/')
+    def create_image(self, title, image_id, ssh_user, cloud_provider, default_instance_size=None):
         """Create a image"""
-        data = {
+        return {
             "title": title,
             "image_id": image_id,
             "ssh_user": ssh_user,
             "cloud_provider": cloud_provider,
             "default_instance_size": default_instance_size
         }
-        return self._post(endpoint, data=json.dumps(data), jsonify=True)
 
-    @endpoint("cloud/images/")
+    @get('cloud/images/', paginate=True)
     def list_images(self):
         """List all images"""
-        return self._get(endpoint, jsonify=True)['results']
+        pass
 
-    @endpoint("cloud/images/{image_id}/")
-    def get_image(self, image_id, none_on_404=False):
+    @get('cloud/images/{image_id}/')
+    def get_image(self, image_id):
         """Return the image that matches the given id"""
-        return self._get(endpoint, jsonify=True, none_on_404=none_on_404)
+        pass
 
-    @endpoint("cloud/images/")
-    def search_images(self, image_id):
+    @get('cloud/images/', paginate=True)
+    def search_images(self, **kwargs):
         """List all images"""
-        return self._get(endpoint, jsonify=True)['results']
+        pass
 
-    @endpoint("cloud/images/{image_id}/")
+    @delete('cloud/images/{image_id}/')
     def delete_image(self, image_id):
         """Delete the image with the given id"""
-        return self._delete(endpoint, jsonify=True)['results']
+        pass

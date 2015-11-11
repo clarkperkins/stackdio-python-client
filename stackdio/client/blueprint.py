@@ -15,16 +15,18 @@
 # limitations under the License.
 #
 
-import json
-
-from .http import HttpMixin, endpoint
+from .exceptions import BlueprintException
+from .http import HttpMixin, get, post, delete
 
 
 class BlueprintMixin(HttpMixin):
 
-    @endpoint("blueprints/")
-    def create_blueprint(self, blueprint, provider="ec2"):
+    @post('blueprints/')
+    def create_blueprint(self, blueprint):
         """Create a blueprint"""
+
+        if 'host_definitions' not in blueprint:
+            raise BlueprintException('Blueprints must contain a list of host_definitions')
 
         formula_map = {}
 
@@ -50,27 +52,24 @@ class BlueprintMixin(HttpMixin):
 
         # check the provided blueprint to see if we need to look up any ids
         for host in blueprint['host_definitions']:
-            for component in host['formula_components']:
+            for component in host.get('formula_components', []):
                 if component['sls_path'] in formula_map:
                     component['formula'] = formula_map[component['sls_path']]
 
-        return self._post(endpoint, data=json.dumps(blueprint), jsonify=True, raise_for_status=False)
+        return blueprint
 
-    @endpoint("blueprints/")
+    @get('blueprints/', paginate=True)
     def list_blueprints(self):
-        """Return info for a specific blueprint_id"""
-        return self._get(endpoint, jsonify=True)['results']
+        pass
 
-    @endpoint("blueprints/{blueprint_id}/")
-    def get_blueprint(self, blueprint_id, none_on_404=False):
-        """Return info for a specific blueprint_id"""
-        return self._get(endpoint, jsonify=True, none_on_404=none_on_404)
+    @get('blueprints/{blueprint_id}/')
+    def get_blueprint(self, blueprint_id):
+        pass
 
-    @endpoint("blueprints/")
+    @get('blueprints/', paginate=True)
     def search_blueprints(self, **kwargs):
-        """Return info for a specific blueprint_id"""
-        return self._get(endpoint, params=kwargs, jsonify=True)['results']
+        pass
 
-    @endpoint("blueprints/{blueprint_id}")
+    @delete('blueprints/{blueprint_id}')
     def delete_blueprint(self, blueprint_id):
-        return self._delete(endpoint, jsonify=True)
+        pass
