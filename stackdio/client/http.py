@@ -73,6 +73,8 @@ def request(path, method, paginate=False, jsonify=True, **req_kwargs):
         def __init__(self, dfunc=None, rfunc=None, quiet=False):
             super(Request, self).__init__()
 
+            self.obj = None
+
             self.data_func = dfunc
             self.response_func = rfunc
 
@@ -91,78 +93,88 @@ def request(path, method, paginate=False, jsonify=True, **req_kwargs):
         def response(self, rfunc):
             return type(self)(self.data_func, rfunc, self.quiet)
 
-        # Here's how the request actually happens
+        def __repr__(self):
+            if self.obj:
+                return '<bound method HTTP {0} request for \'/api/{1}\' on {2}>'.format(method, path, repr(self.obj))
+            else:
+                return super(Request, self).__repr__()
+
+        # We need this so we can save the client object as an attribute, and then it can be used
+        # in __call__
         def __get__(self, obj, objtype=None):
-            def do_request(*args, **kwargs):
-                none_on_404 = kwargs.pop('none_on_404', False)
-                raise_for_status = kwargs.pop('raise_for_status', True)
+            self.obj = obj
+            assert issubclass(objtype, HttpMixin)
+            return self
 
-                # Get what locals() would return directly after calling
-                # 'func' with the given args and kwargs
-                future_locals = getcallargs(self.data_func, *((obj,) + args), **kwargs)
+        # Here's how the request actually happens
+        def __call__(self, *args, **kwargs):
+            none_on_404 = kwargs.pop('none_on_404', False)
+            raise_for_status = kwargs.pop('raise_for_status', True)
 
-                # Build the variable we'll inject
-                url = '{url}{path}'.format(
-                    url=obj.url,
-                    path=path.format(**future_locals)
-                )
+            # Get what locals() would return directly after calling
+            # 'func' with the given args and kwargs
+            future_locals = getcallargs(self.data_func, *((self.obj,) + args), **kwargs)
 
-                if not self.quiet:
-                    self._http_log.info("{0}: {1}".format(method, url))
+            # Build the variable we'll inject
+            url = '{url}{path}'.format(
+                url=self.obj.url,
+                path=path.format(**future_locals)
+            )
 
-                data = None
-                if self.data_func:
-                    data = json.dumps(self.data_func(obj, *args, **kwargs))
+            if not self.quiet:
+                self._http_log.info("{0}: {1}".format(method, url))
 
-                result = requests.request(method,
-                                          url,
-                                          data=data,
-                                          auth=obj._http_options['auth'],
-                                          headers=self.headers,
-                                          params=kwargs,
-                                          verify=obj._http_options['verify'])
+            data = None
+            if self.data_func:
+                data = json.dumps(self.data_func(self.obj, *args, **kwargs))
 
-                # Handle special conditions
-                if none_on_404 and result.status_code == 404:
-                    return None
+            result = requests.request(method,
+                                      url,
+                                      data=data,
+                                      auth=self.obj._http_options['auth'],
+                                      headers=self.headers,
+                                      params=kwargs,
+                                      verify=self.obj._http_options['verify'])
 
-                elif result.status_code == 204:
-                    return None
+            # Handle special conditions
+            if none_on_404 and result.status_code == 404:
+                return None
 
-                elif raise_for_status:
-                    try:
-                        result.raise_for_status()
-                    except Exception:
-                        logger.error(result.text)
-                        raise
+            elif result.status_code == 204:
+                return None
 
-                if jsonify:
-                    response = result.json()
-                else:
-                    response = result.text
+            elif raise_for_status:
+                try:
+                    result.raise_for_status()
+                except Exception:
+                    logger.error(result.text)
+                    raise
 
-                if method == 'GET' and paginate and jsonify:
-                    res = response['results']
+            if jsonify:
+                response = result.json()
+            else:
+                response = result.text
 
-                    next_url = response['next']
+            if method == 'GET' and paginate and jsonify:
+                res = response['results']
 
-                    while next_url:
-                        next_page = requests.request(method,
-                                                     next_url,
-                                                     data=data,
-                                                     auth=obj._http_options['auth'],
-                                                     headers=self.headers,
-                                                     params=kwargs,
-                                                     verify=obj._http_options['verify']).json()
-                        res.extend(next_page['results'])
-                        next_url = next_page['next']
+                next_url = response['next']
 
-                    response = res
+                while next_url:
+                    next_page = requests.request(method,
+                                                 next_url,
+                                                 data=data,
+                                                 auth=self.obj._http_options['auth'],
+                                                 headers=self.headers,
+                                                 params=kwargs,
+                                                 verify=self.obj._http_options['verify']).json()
+                    res.extend(next_page['results'])
+                    next_url = next_page['next']
 
-                # now process the result
-                return self.response_func(obj, response)
+                response = res
 
-            return do_request
+            # now process the result
+            return self.response_func(self.obj, response)
 
     return Request
 
