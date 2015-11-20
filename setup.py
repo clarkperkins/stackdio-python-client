@@ -33,7 +33,8 @@ def test_python_version():
 
 # Set version
 __version__ = '0.0.0'  # Explicit default
-execfile('stackdio/client/version.py')
+with open('stackdio/client/version.py') as f:
+    exec(f.read())
 
 
 SHORT_DESCRIPTION = ('A cloud deployment, automation, and orchestration '
