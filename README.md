@@ -1,6 +1,8 @@
 stackdio-python-client
 ======================
 
+[![Build Status](https://travis-ci.org/stackdio/stackdio-python-client.svg?branch=master)](https://travis-ci.org/stackdio/stackdio-python-client)
+
 The canonical Python client and cli for the stackd.io API
 
 
