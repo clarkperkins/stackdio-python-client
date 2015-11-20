@@ -17,6 +17,7 @@
 
 from __future__ import print_function
 
+import json
 import logging
 import requests
 
@@ -31,6 +32,181 @@ HTTP_INSECURE_MESSAGE = "\n".join([
     "You have chosen not to verify ssl connections.",
     "This is insecure, but it's your choice.",
     "This has been your single warning."])
+
+
+class HttpMixin(object):
+    """Add HTTP request features to an object"""
+
+    HEADERS = {
+        'json': {"content-type": "application/json"},
+        'xml': {"content-type": "application/xml"}
+    }
+
+    def __init__(self, auth=None, verify=True):
+        super(HttpMixin, self).__init__()
+
+        self._http_options = {
+            'auth': auth,
+            'verify': verify,
+        }
+        self._http_log = logging.getLogger(__name__)
+
+        if not verify:
+            if self._http_log.handlers:
+                self._http_log.warn(HTTP_INSECURE_MESSAGE)
+            else:
+                print(HTTP_INSECURE_MESSAGE)
+
+            from requests.packages.urllib3 import disable_warnings
+            disable_warnings()
+
+
+def default_response(obj, response):
+    return response
+
+
+def request(path, method, paginate=False, jsonify=True, **req_kwargs):
+
+    # Define a class here that uses the path / method we want.  We need it inside this function
+    # so we have access to the path / method.
+    class Request(object):
+        def __init__(self, dfunc=None, rfunc=None, quiet=False):
+            super(Request, self).__init__()
+
+            self.obj = None
+
+            self.data_func = dfunc
+            self.response_func = rfunc
+
+            if self.response_func is None:
+                self.response_func = default_response
+
+            self.quiet = quiet
+
+            self.headers = req_kwargs.get('headers', HttpMixin.HEADERS['json'])
+
+            self._http_log = logging.getLogger(__name__)
+
+        def data(self, dfunc):
+            return type(self)(dfunc, self.response_func, self.quiet)
+
+        def response(self, rfunc):
+            return type(self)(self.data_func, rfunc, self.quiet)
+
+        def __repr__(self):
+            if self.obj:
+                return '<bound method HTTP {0} request for \'/api/{1}\' on {2}>'.format(method, path, repr(self.obj))
+            else:
+                return super(Request, self).__repr__()
+
+        # We need this so we can save the client object as an attribute, and then it can be used
+        # in __call__
+        def __get__(self, obj, objtype=None):
+            self.obj = obj
+            assert issubclass(objtype, HttpMixin)
+            return self
+
+        # Here's how the request actually happens
+        def __call__(self, *args, **kwargs):
+            none_on_404 = kwargs.pop('none_on_404', False)
+            raise_for_status = kwargs.pop('raise_for_status', True)
+
+            # Get what locals() would return directly after calling
+            # 'func' with the given args and kwargs
+            future_locals = getcallargs(self.data_func, *((self.obj,) + args), **kwargs)
+
+            # Build the variable we'll inject
+            url = '{url}{path}'.format(
+                url=self.obj.url,
+                path=path.format(**future_locals)
+            )
+
+            if not self.quiet:
+                self._http_log.info("{0}: {1}".format(method, url))
+
+            data = None
+            if self.data_func:
+                data = json.dumps(self.data_func(self.obj, *args, **kwargs))
+
+            result = requests.request(method,
+                                      url,
+                                      data=data,
+                                      auth=self.obj._http_options['auth'],
+                                      headers=self.headers,
+                                      params=kwargs,
+                                      verify=self.obj._http_options['verify'])
+
+            # Handle special conditions
+            if none_on_404 and result.status_code == 404:
+                return None
+
+            elif result.status_code == 204:
+                return None
+
+            elif raise_for_status:
+                try:
+                    result.raise_for_status()
+                except Exception:
+                    logger.error(result.text)
+                    raise
+
+            if jsonify:
+                response = result.json()
+            else:
+                response = result.text
+
+            if method == 'GET' and paginate and jsonify:
+                res = response['results']
+
+                next_url = response['next']
+
+                while next_url:
+                    next_page = requests.request(method,
+                                                 next_url,
+                                                 data=data,
+                                                 auth=self.obj._http_options['auth'],
+                                                 headers=self.headers,
+                                                 params=kwargs,
+                                                 verify=self.obj._http_options['verify']).json()
+                    res.extend(next_page['results'])
+                    next_url = next_page['next']
+
+                response = res
+
+            # now process the result
+            return self.response_func(self.obj, response)
+
+    return Request
+
+
+# Define the decorators for all the methods
+
+def get(path, paginate=False, jsonify=True):
+    return request(path, 'GET', paginate=paginate, jsonify=jsonify)
+
+
+def head(path):
+    return request(path, 'HEAD')
+
+
+def options(path):
+    return request(path, 'OPTIONS')
+
+
+def post(path):
+    return request(path, 'POST')
+
+
+def put(path):
+    return request(path, 'PUT')
+
+
+def patch(path):
+    return request(path, 'PATCH')
+
+
+def delete(path):
+    return request(path, 'DELETE')
 
 
 def use_admin_auth(func):
@@ -51,126 +227,3 @@ def use_admin_auth(func):
         obj._http_options['auth'] = auth
         return output
     return wrapper
-
-
-def endpoint(path):
-    """Takes a path extension and appends to the known API base url.
-    The result of this is then added to the decorated functions global
-    scope as a variable named 'endpoint"""
-    def decorator(func):
-        @wraps(func)
-        def wrapper(obj, *args, **kwargs):
-
-            # Get what locals() would return directly after calling
-            # 'func' with the given args and kwargs
-            future_locals = getcallargs(func, *((obj,) + args), **kwargs)
-
-            # Build the variable we'll inject
-            url = "{url}{path}".format(
-                url=obj.url,
-                path=path.format(**future_locals))
-
-            # Grab the global context for the passed function
-            g = func.__globals__
-
-            # Create a unique default object so we can accurately determine
-            # if we replaced a value
-            sentinel = object()
-            oldvalue = g.get('endpoint', sentinel)
-
-            # Inject our variable into the global scope
-            g['endpoint'] = url
-
-            # Logging and function call
-            if oldvalue:
-                logger.debug("Value %s for 'endpoint' replaced in global scope "
-                             "for function %s" % (oldvalue, func.__name__))
-            logger.debug("%s.__globals__['endpoint'] = %s" % (func.__name__, url))
-
-            result = func(obj, *args, **kwargs)
-
-            # Replace the previous value, if it existed
-            if oldvalue is not sentinel:
-                g['endpoint'] = oldvalue
-
-            return result
-        return wrapper
-    return decorator
-
-
-class HttpMixin(object):
-    """Add HTTP request features to an object"""
-
-    HEADERS = {
-        'json': {"content-type": "application/json"},
-        'xml': {"content-type": "application/xml"}
-    }
-
-    def __init__(self, auth=None, verify=True):
-        self._http_options = {
-            'auth': auth,
-            'verify': verify,
-        }
-        self._http_log = logging.getLogger(__name__)
-
-        if not verify:
-            if self._http_log.handlers:
-                self._http_log.warn(HTTP_INSECURE_MESSAGE)
-            else:
-                print(HTTP_INSECURE_MESSAGE)
-
-            from requests.packages.urllib3 import disable_warnings
-            disable_warnings()
-
-    def _request(self, verb, url, quiet=False,
-                 none_on_404=False, jsonify=False, raise_for_status=True,
-                 *args, **kwargs):
-        """Generic request method"""
-        if not quiet:
-            self._http_log.info("{0}: {1}".format(verb, url))
-
-        headers = kwargs.get('headers', HttpMixin.HEADERS['json'])
-
-        result = requests.request(verb, url,
-                                  auth=self._http_options['auth'],
-                                  headers=headers,
-                                  verify=self._http_options['verify'],
-                                  *args, **kwargs)
-
-        # Handle special conditions
-        if none_on_404 and result.status_code == 404:
-            return None
-
-        elif result.status_code == 204:
-            return None
-
-        elif raise_for_status:
-            try:
-                result.raise_for_status()
-            except Exception:
-                logger.error(result.text)
-                raise
-
-        # return
-        if jsonify:
-            return result.json()
-        else:
-            return result
-
-    def _head(self, url, *args, **kwargs):
-        return self._request("HEAD", url, *args, **kwargs)
-
-    def _get(self, url, *args, **kwargs):
-        return self._request("GET", url, *args, **kwargs)
-
-    def _delete(self, url, *args, **kwargs):
-        return self._request("DELETE", url, *args, **kwargs)
-
-    def _post(self, url, data=None, *args, **kwargs):
-        return self._request("POST", url, data=data, *args, **kwargs)
-
-    def _put(self, url, data=None, *args, **kwargs):
-        return self._request("PUT", url, data=data, *args, **kwargs)
-
-    def _patch(self, url, data=None, *args, **kwargs):
-        return self._request("PATCH", url, data=data, *args, **kwargs)

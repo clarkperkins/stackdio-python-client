@@ -15,24 +15,22 @@
 # limitations under the License.
 #
 
-import json
-
-from .http import HttpMixin, endpoint
+from .http import HttpMixin, get, post, delete
 
 
 class AccountMixin(HttpMixin):
 
-    @endpoint("cloud/providers/")
+    @get('cloud/providers/', paginate=True)
     def list_providers(self):
         """List all providers"""
-        return self._get(endpoint, jsonify=True)['results']
+        pass
 
-    @endpoint("cloud/providers/")
-    def search_providers(self, provider_id):
-        """List all providers"""
-        return self._get(endpoint, jsonify=True)['results']
+    @get('cloud/providers/', paginate=True)
+    def search_providers(self, **kwargs):
+        """Search for a provider"""
+        pass
 
-    @endpoint("cloud/accounts/")
+    @post('cloud/accounts/')
     def create_account(self, **kwargs):
         """Create an account"""
 
@@ -52,24 +50,24 @@ class AccountMixin(HttpMixin):
         for key in form_data.keys():
             form_data[key] = kwargs.get(key)
 
-        return self._post(endpoint, data=json.dumps(form_data), jsonify=True)
+        return form_data
 
-    @endpoint("accounts/")
+    @get('cloud/accounts/', paginate=True)
     def list_accounts(self):
         """List all account"""
-        return self._get(endpoint, jsonify=True)['results']
+        pass
 
-    @endpoint("accounts/{account_id}/")
-    def get_account(self, account_id, none_on_404=False):
+    @get('cloud/accounts/{account_id}/')
+    def get_account(self, account_id):
         """Return the account that matches the given id"""
-        return self._get(endpoint, jsonify=True, none_on_404=none_on_404)
+        pass
 
-    @endpoint("accounts/")
-    def search_accounts(self, account_id):
+    @get('cloud/accounts/')
+    def search_accounts(self, **kwargs):
         """List all accounts"""
-        return self._get(endpoint, jsonify=True)['results']
+        pass
 
-    @endpoint("accounts/{account_id}/")
+    @delete('cloud/accounts/{account_id}/')
     def delete_account(self, account_id):
         """List all accounts"""
-        return self._delete(endpoint, jsonify=True)['results']
+        pass

@@ -15,10 +15,9 @@
 # limitations under the License.
 #
 
-import json
 import logging
 
-from .http import use_admin_auth, endpoint
+from .http import get, post, patch
 from .exceptions import BlueprintException, StackException, IncompatibleVersionException
 
 from .blueprint import BlueprintMixin
@@ -61,59 +60,25 @@ class StackdIO(BlueprintMixin, FormulaMixin, AccountMixin,
             raise IncompatibleVersionException('Server version {0}.{1}.{2} not '
                                                'supported.'.format(**self.version))
 
-    @endpoint("")
+    @get('')
     def get_root(self):
-        """Get the api root"""
-        return self._get(endpoint, jsonify=True)
+        pass
 
-    @endpoint("version/")
+    @get('version/')
     def get_version(self):
-        return self._get(endpoint, jsonify=True)['version']
+        pass
 
-    @use_admin_auth
-    @endpoint("security_groups/")
+    @get_version.response
+    def get_version(self, resp):
+        return resp['version']
+
+    @post('cloud/security_groups/')
     def create_security_group(self, name, description, cloud_provider, is_default=True):
         """Create a security group"""
 
-        data = {
+        return {
             "name": name,
             "description": description,
             "cloud_provider": cloud_provider,
             "is_default": is_default
         }
-        return self._post(endpoint, data=json.dumps(data), jsonify=True)
-
-    @endpoint("user/")
-    def get_public_key(self):
-        """Get the public key for the logged in user"""
-        return self._get(endpoint, jsonify=True)['settings']['public_key']
-
-    @endpoint("settings/")
-    def set_public_key(self, public_key):
-        """Upload a public key for our user. public_key can be the actual key, a
-        file handle, or a path to a key file"""
-
-        if isinstance(public_key, file):
-            public_key = public_key.read()
-        elif isinstance(public_key, str) and os.path.exists(public_key):
-            public_key = open(public_key, "r").read()
-
-        data = {
-            "public_key": public_key
-        }
-        return self._put(endpoint, data=json.dumps(data), jsonify=True)
-
-    @endpoint("instance_sizes/")
-    def get_instance_id(self, instance_id, provider_type="ec2"):
-        """Get the id for an instance_id. The instance_id parameter is the
-        provider name (e.g. m1.large). The id returned is the stackd.io id
-        for use in API calls (e.g. 1)."""
-
-        result = self._get(endpoint, jsonify=True)
-        for instance in result['results']:
-            if instance.get("instance_id") == instance_id and \
-               instance.get("provider_type") == provider_type:
-                return instance.get("id")
-
-        raise StackException("Instance type %s from provider %s not found" %
-                             (instance_id, provider_type))

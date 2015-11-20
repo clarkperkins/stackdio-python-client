@@ -1,0 +1,6 @@
+blueprints: {}
+
+formulas:
+  java: https://github.com/stackdio-formulas/java-formula.git
+  cdh5: https://github.com/stackdio-formulas/cdh5-formula.git
+  elasticsearch: https://github.com/stackdio-formulas/elasticsearch-formula.git
