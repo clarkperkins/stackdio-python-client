@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import json
 import os
 import argparse
@@ -266,5 +268,3 @@ class BlueprintMixin(Cmd):
                 "Blueprint [{0}] does not exist".format(blueprint_name),
                 "red"))
             raise
-
-

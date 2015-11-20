@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 from cmd2 import Cmd
 
 
@@ -78,4 +80,3 @@ class FormulaMixin(Cmd):
         self.stacks.delete_formula(formula_id)
 
         print("Formula deleted, try the 'list' command to monitor status")
-

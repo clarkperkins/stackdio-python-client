@@ -54,6 +54,12 @@ requirements = [
     'simplejson==3.4.0',
 ]
 
+testing_requirements = [
+    'coveralls',
+    'pep8',
+    'pylint<=1.2.0',
+]
+
 if __name__ == "__main__":
     test_python_version()
 
@@ -81,6 +87,9 @@ if __name__ == "__main__":
         zip_safe=False,
         install_requires=requirements,
         dependency_links=[],
+        extras_require={
+            'testing': testing_requirements,
+        },
         entry_points={
             'console_scripts': [
                 'stackdio-cli=stackdio.cli:main',

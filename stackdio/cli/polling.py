@@ -10,7 +10,6 @@ class TimeoutException(Exception):
 def poll_and_wait(func, args=None, sleep_time=2, max_time=120):
     """Execute func in increments of sleep_time for no more than max_time.
     Raise TimeoutException if we're not successful in max_time"""
-    #pylint: disable=W0142
 
     args = args or []
     current_time = 0
@@ -25,4 +24,3 @@ def poll_and_wait(func, args=None, sleep_time=2, max_time=120):
 
     if not success:
         raise TimeoutException()
-

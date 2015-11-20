@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import json
 
 from cmd2 import Cmd
@@ -8,7 +10,7 @@ from stackdio.client.exceptions import StackException
 class StackMixin(Cmd):
 
     STACK_ACTIONS = ["start", "stop", "launch_existing", "terminate", "provision", "custom"]
-    STACK_COMMANDS = ["list", "launch_from_blueprint", "history", "hostnames", 
+    STACK_COMMANDS = ["list", "launch_from_blueprint", "history", "hostnames",
         "delete", "logs", "access_rules"] + STACK_ACTIONS
 
     VALID_LOGS = {
@@ -23,7 +25,7 @@ class StackMixin(Cmd):
 
     def do_stacks(self, arg):
         """Entry point to controlling."""
-       
+
         USAGE = "Usage: stacks COMMAND\nWhere COMMAND is one of: %s" % (
             ", ".join(self.STACK_COMMANDS))
 
@@ -54,7 +56,7 @@ class StackMixin(Cmd):
 
         else:
             print(USAGE)
-   
+
     def complete_stacks(self, text, line, begidx, endidx):
         # not using line, begidx, or endidx, thus the following pylint disable
         # pylint: disable=W0613
@@ -74,9 +76,9 @@ class StackMixin(Cmd):
         self._print_summary("Stack", stacks)
 
     def _launch_stack(self, args):
-        """Launch a stack from a blueprint.  
+        """Launch a stack from a blueprint.
         Must provide blueprint name and stack name"""
-        
+
         if len(args) != 2:
             print("Usage: stacks launch BLUEPRINT_NAME STACK_NAME")
             return
@@ -94,7 +96,7 @@ class StackMixin(Cmd):
 
         print("Launching stack [{0}] from blueprint [{1}]".format(
             stack_name, blueprint_name))
-        
+
         stack_data = {
             "blueprint": blueprint_id,
             "title": stack_name,
@@ -131,7 +133,7 @@ class StackMixin(Cmd):
             print("Usage: stacks custom STACK_NAME HOST_TARGET COMMAND")
             print("Where command can be arbitrarily long with spaces")
             return
-       
+
         if args[0] not in self.STACK_ACTIONS:
             print(self.colorize(
                 "Invalid action - must be one of {0}".format(self.STACK_ACTIONS),
@@ -165,7 +167,6 @@ class StackMixin(Cmd):
 
     def _stack_history(self, args):
         """Print recent history for a stack"""
-        # pylint: disable=W0142
 
         NUM_EVENTS = 20
         if len(args) < 1:
@@ -183,7 +184,7 @@ class StackMixin(Cmd):
         if len(args) < 1:
             print("Usage: stacks hostnames STACK_NAME")
             return
-        
+
         stack_id = self._get_stack_id(args[0])
         try:
             fqdns = self.stacks.describe_hosts(stack_id)
@@ -208,7 +209,7 @@ class StackMixin(Cmd):
         if really not in ["y", "Y"]:
             print("Aborting deletion")
             return
-            
+
         results = self.stacks.delete_stack(stack_id)
         print("Delete stack results: {0}".format(results))
         print(self.colorize(
@@ -218,7 +219,7 @@ class StackMixin(Cmd):
 
     def _stack_logs(self, args):
         """Get logs for a stack"""
-        
+
         MAX_LINES = 25
 
         if len(args) < 2:
@@ -230,7 +231,7 @@ class StackMixin(Cmd):
             return
 
         if len(args) >= 3:
-            max_lines = args[2] 
+            max_lines = args[2]
         else:
             max_lines = MAX_LINES
 
@@ -245,37 +246,37 @@ class StackMixin(Cmd):
     def _stack_access_rules(self, args):
         """Get access rules for a stack"""
 
-
         COMMANDS = ["list", "add", "delete"]
 
         if len(args) < 2 or args[0] not in COMMANDS:
             print("Usage: stacks access_rules COMMAND STACK_NAME")
             print("Where COMMAND is one of: %s" % (", ".join(COMMANDS)))
             return
-                  
+
         if args[0] == "list":
             stack_id = self.stacks.get_stack_id(args[1])
             groups = self.stacks.list_access_rules(stack_id)
-            print "##", len(groups), "Access Groups"
+            print("## {0} Access Groups".format(len(groups)))
             for group in groups:
-                print "- Name:", group['blueprint_host_definition']['title']
-                print "  Description:", group['blueprint_host_definition']['description']
-                print "  Rules:"
+                print("- Name: {0}".format(group['blueprint_host_definition']['title']))
+                print("  Description: {0}".format(group['blueprint_host_definition']['description']))
+                print("  Rules:")
                 for rule in group['rules']:
-                    print "   ",rule['protocol'],
+                    print("    {0}".format(rule['protocol']), end='')
                     if rule['from_port'] == rule['to_port']:
-                        print "port", rule['from_port'], "allows",
+                        print("port {0} allows".format(rule['from_port']), end='')
                     else:
-                        print "ports", rule['from_port']+"-"+rule['to_port'], "allow",
-                    print rule['rule']
-                print
+                        print("ports {0}-{1} allow".format(rule['from_port'],
+                                                           rule['to_port']), end='')
+                    print(rule['rule'])
+                print('')
             return
 
         elif args[0] == "add":
             if len(args) < 3:
                 print("Usage: stacks access_rules add STACK_NAME GROUP_NAME")
                 return
-            
+
             stack_id = self.stacks.get_stack_id(args[1])
             group_id = self.stacks.get_access_rule_id(stack_id, args[2])
 
@@ -306,16 +307,16 @@ class StackMixin(Cmd):
 
             rules = self.stacks.list_rules_for_group(group_id)
 
-            print
+            print('')
             for rule in rules:
-                print str(index)+") ", rule['protocol'],
+                print("{0}) {1}".format(index, rule['protocol']), end='')
                 if rule['from_port'] == rule['to_port']:
-                    print "port", rule['from_port'], "allows",
+                    print("port {0} allows".format(rule['from_port']), end='')
                 else:
-                    print "ports", rule['from_port']+"-"+rule['to_port'], "allow",
-                print rule['rule']
+                    print("ports {0}-{1} allow".format(rule['from_port'], rule['to_port']), end='')
+                print(rule['rule'])
                 index += 1
-            print
+            print('')
             delete_index = int(raw_input("Enter the index of the rule to delete: "))
 
             data = rules[delete_index]
@@ -325,10 +326,8 @@ class StackMixin(Cmd):
 
             self.stacks.edit_access_rule(group_id, data)
 
-        print
-    
+        print('')
+
         args[0] = "list"
-    
+
         self._stack_access_rules(args)
-
-

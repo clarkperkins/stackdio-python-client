@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
+
 import argparse
 import json
 import os
@@ -29,14 +31,14 @@ class StackdioShell(
     PROMPT = "\n{username} @ {url}\n> "
     HELP_CMDS = [
         "account_summary",
-        "stacks", "blueprints", "formulas", 
-        "initial_setup", "bootstrap", 
+        "stacks", "blueprints", "formulas",
+        "initial_setup", "bootstrap",
         "help", "exit", "quit",
     ]
 
     Cmd.intro = """
 ######################################################################
-                      s  t  a  c  k  d  .  i  o                         
+                      s  t  a  c  k  d  .  i  o
 ######################################################################
 """
 
@@ -69,7 +71,7 @@ class StackdioShell(
         self.stacks = StackdIO(
             base_url=self.config["url"],
             auth=(
-                self.config["username"], 
+                self.config["username"],
                 keyring.get_password(self.KEYRING_SERVICE, self.config.get("username") or "")
             ),
             verify=self.config.get('verify', True)
@@ -133,7 +135,7 @@ class StackdioShell(
         Cmd.prompt = self.colorize(
             self.PROMPT.format(**self.config),
             "blue")
-        
+
         if not self.validated and self.config['url'] is not None:
             print(self.colorize("""
 ##
@@ -142,7 +144,7 @@ class StackdioShell(
 ## 'initial_setup' to configure your account details.  If you've already
 ## done that, there could be a network connection issue anywhere between
 ## your computer and your stackd.io instance,
-## or your password may be incorrect, or ... etc.  
+## or your password may be incorrect, or ... etc.
 ##
                 """,
                                 "green"))
@@ -155,7 +157,7 @@ class StackdioShell(
     def _print_summary(self, title, components):
         num_components = len(components)
         print("## {0} {1}{2}".format(
-            num_components, 
+            num_components,
             title,
             "s" if num_components == 0 or num_components > 1 else ""))
 
@@ -183,7 +185,7 @@ class StackdioShell(
 
         print("## Username: {0}".format(self.config["username"]))
         print("## Public Key:\n{0}".format(public_key))
-        
+
         self._print_summary("Formula", formulas)
         self._print_summary("Blueprint", blueprints)
         self._print_summary("Stack", stacks)

@@ -122,7 +122,7 @@ def request(path, method, paginate=False, jsonify=True, **req_kwargs):
             )
 
             if not self.quiet:
-                self._http_log.info("{0}: {1}".format(method, url))
+                self._http_log.info("%s: %s", method, url)
 
             data = None
             if self.data_func:

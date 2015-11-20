@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import getpass
 import json
 import os
@@ -26,7 +28,7 @@ class BootstrapMixin(Cmd):
         self.stacks = None
         self.config = None
         self.bootstrap_data = None
-    
+
     def do_initial_setup(self, args=None):
         """Perform setup for your stackd.io account"""
 
@@ -53,7 +55,7 @@ class BootstrapMixin(Cmd):
                 self.config[k] = v
 
             # Validate the url, prompt for a new one if invalid
-            if not self.config.has_key('url') or not self._test_url(self.config['url']):
+            if 'url' not in self.config or not self._test_url(self.config['url']):
                 print("There seems to be an issue with the url you provided.")
                 self.config['url'] = None
                 self._get_url()
@@ -75,7 +77,7 @@ class BootstrapMixin(Cmd):
                 self._choose_profile()
 
         # Only prompt for default profile if it's not already there
-        if not self.config.has_key('profile') \
+        if 'profile' not in self.config \
                 or 'provider' not in self.config \
                 or 'provider_type' not in self.config:
             if 'profile' in self.config:
@@ -108,11 +110,11 @@ class BootstrapMixin(Cmd):
                 "red"))
             return
 
-        if not self.config.has_key('profile'):
-            print(self.colorize("You must have a default profile in order to run bootstrap.  Run 'initial_setup'",
-                                "red"))
+        if 'profile' not in self.config:
+            print(self.colorize("You must have a default profile in order to run bootstrap.  "
+                                "Run 'initial_setup'", "red"))
             return
-    
+
         print("Bootstrapping your account")
 
         custom_bootstrap = raw_input("Do you have a custom bootstrap yaml file (y/n)? ")
@@ -184,11 +186,11 @@ class BootstrapMixin(Cmd):
         """Prompt user for credentials"""
 
         self.config["username"] = raw_input("What is your username? ")
-        
+
         if keyring.get_password(self.KEYRING_SERVICE, self.config["username"]):
             print("Password already stored for {0}".format(self.config["username"]))
             keep_password = raw_input("Keep existing password (y/n)? ")
-        else: 
+        else:
             keep_password = "n"
 
         if keep_password in ["n", "N"]:
@@ -201,24 +203,26 @@ class BootstrapMixin(Cmd):
         """Prompt user for a default provider/profile"""
         auth = (self.config['username'],
                 keyring.get_password(self.KEYRING_SERVICE, self.config['username']))
-        profiles = requests.get(self.config['url']+"profiles/", auth=auth, verify=False).json()['results']
+        profiles = requests.get(self.config['url'] + "profiles/",
+                                auth=auth, verify=False).json()['results']
 
         print("Choose a default profile:")
 
         idx = 0
         for profile in profiles:
-            print(str(idx)+':')
-            print('   '+profile['title'])
-            print('   '+profile['description'])
+            print(str(idx) + ':')
+            print('   ' + profile['title'])
+            print('   ' + profile['description'])
             idx += 1
 
-        print
+        print('')
         choice = int(raw_input("Enter the number of the profile you would like to choose: "))
 
         provider = requests.get(
-            self.config['url']+"providers/{0}/".format(profiles[choice]['cloud_provider']),
+            self.config['url'] + "providers/{0}/".format(profiles[choice]['cloud_provider']),
             auth=auth,
-            verify=False).json()
+            verify=False
+        ).json()
 
         self.config['profile'] = profiles[choice]['title']
         self.config['provider'] = provider['title']
@@ -255,7 +259,7 @@ class BootstrapMixin(Cmd):
         else:
             print("Setting public key")
             self.stacks.set_public_key(public_key)
-            self.has_public_key = True 
+            self.has_public_key = True
 
     def _bootstrap_formulas(self):
         """Import and wait for formulas to become ready"""
@@ -266,7 +270,7 @@ class BootstrapMixin(Cmd):
                 if formula.get("status") != "complete":
                     return False
             return True
-                    
+
         formulas = self.bootstrap_data.get("formulas", [])
         print("Importing {0} formula{1}".format(
             len(formulas),
@@ -284,7 +288,7 @@ class BootstrapMixin(Cmd):
             print(self.colorize(
                 "\nTIMEOUT - formulas failed to finish importing, monitor with `formulas list`",
                 "red"))
- 
+
     def _bootstrap_blueprints(self):
         """Create blueprints"""
 
@@ -296,6 +300,7 @@ class BootstrapMixin(Cmd):
             print(" - {0} // {1}".format(name, blueprint))
 
             # Get the blueprints relative to the bootstrap config file
-            self._create_blueprint([os.path.join(os.path.dirname(self.BOOTSTRAP_FILE), "blueprints",
-                blueprint)], bootstrap=True)
-
+            self._create_blueprint(
+                [os.path.join(os.path.dirname(self.BOOTSTRAP_FILE), "blueprints", blueprint)],
+                bootstrap=True,
+            )

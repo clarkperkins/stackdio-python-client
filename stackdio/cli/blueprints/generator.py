@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import sys
 import os
 import json
@@ -49,7 +51,7 @@ class BlueprintGenerator(object):
             undefined=StrictUndefined)
 
         # Add a filter for json - then we can put lists, etc in our templates
-        self.env.filters['json'] = lambda value: json.dumps(value)
+        self.env.filters['json'] = lambda value: json.dumps(value)  # pylint: disable=unnecessary-lambda
 
         # Add a filter for newline escaping.  Essentially just a wrapper around the
         # replace('\n', '\\n') filter
@@ -101,7 +103,7 @@ class BlueprintGenerator(object):
                 return ''
             else:
                 return yaml_parsed
-        except:
+        except Exception:
             # yaml couldn't parse it
             return raw
 
@@ -132,23 +134,23 @@ class BlueprintGenerator(object):
         # not allowed to be set by the template that did the include.
 
         for tag in ast.body:
-            if type(tag) == Assign:
-                if type(tag.node) == Const:
+            if isinstance(tag, Assign):
+                if isinstance(tag.node, Const):
                     ret[tag.target.name] = tag.node.value
                 else:
                     # This is OK - RHS is an expr instead of a constant.  Keep track of these so we
                     # don't get an error later
                     ret[tag.target.name] = self.sentinel
 
-            elif type(tag) == If:
+            elif isinstance(tag, If):
                 # This is a simple naive check to see if we care about the variable being set.
                 # Basically, if there is a variable inside an "if <var> is not undefined" block,
                 # It is OK if that variable is not set in a derived template or var file since it
                 # is an optional configuration value
-                if type(tag.test) == Not and tag.test.node.name == 'undefined':
+                if isinstance(tag.test, Not) and tag.test.node.name == 'undefined':
                     ret[tag.test.node.node.name] = None
 
-            elif type(tag) == Block:
+            elif isinstance(tag, Block):
                 # Found a block, could be if statements within the block.  Recursive call
                 # TODO: not sure if this will cause a bug, since set statements are local to blocks
                 ret.update(self.find_set_vars(tag))
@@ -164,7 +166,7 @@ class BlueprintGenerator(object):
         :return: the set and unset variables
         :rtype: tuple
         """
-        ### Get all the info for the CURRENT template
+        # Get all the info for the CURRENT template
         # Get the source of the template
         template_source = self.env.loader.get_source(self.env, template_file)[0]
         # parse it into an abstract syntax tree
