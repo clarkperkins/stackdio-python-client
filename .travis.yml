@@ -17,7 +17,6 @@ env:
   NOSE_WITH_COVERAGE: 1
   NOSE_COVER_BRANCHES: 1
   NOSE_COVER_INCLUSIVE: 1
-  DJANGO_SETTINGS_MODULE: stackdio.server.settings.testing
 
 # So that we get a docker container
 sudo: false
