@@ -46,6 +46,10 @@ class FormulaMixin(HttpMixin):
         """Get a formula with matching id"""
         pass
 
+    @get('formulas/{formula_id}/components/?version={version}', paginate=True)
+    def list_components_for_version(self, formula_id, version):
+        pass
+
     @get('formulas/', paginate=True)
     def search_formulas(self, **kwargs):
         """Get a formula with matching id"""

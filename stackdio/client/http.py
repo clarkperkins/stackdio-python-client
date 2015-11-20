@@ -158,7 +158,7 @@ def request(path, method, paginate=False, jsonify=True, **req_kwargs):
             if method == 'GET' and paginate and jsonify:
                 res = response['results']
 
-                next_url = response['next']
+                next_url = response.get('next')
 
                 while next_url:
                     next_page = requests.request(method,
@@ -169,7 +169,7 @@ def request(path, method, paginate=False, jsonify=True, **req_kwargs):
                                                  params=kwargs,
                                                  verify=self.obj._http_options['verify']).json()
                     res.extend(next_page['results'])
-                    next_url = next_page['next']
+                    next_url = next_page.get('next')
 
                 response = res
 

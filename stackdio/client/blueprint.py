@@ -43,10 +43,7 @@ class BlueprintMixin(HttpMixin):
                         break
 
             for formula in used_formulas:
-                components = self._get(
-                    '{0}?version={1}'.format(formula['components'], formula['version']),
-                    jsonify=True,
-                )['results']
+                components = self.list_components_for_version(formula['id'], formula['version'])
                 for component in components:
                     formula_map[component['sls_path']] = formula['uri']
 
