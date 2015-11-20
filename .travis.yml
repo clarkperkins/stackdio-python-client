@@ -47,11 +47,11 @@ after_success:
 deploy:
   provider: releases
   api_key:
-    secure: dJIj78Kl5nvtE2OpYl2I4ICEw20kLVXyr+eGOcWVV3kbU+PS6zKqOtLM+sGuVYNSbqWviRR9um6zbzjqS3S2wjFOdeStMogo19EKepSc0S97t6BkmbH0KooFuFah/YFOzLu+UBzDa3EETvgd1/988Eoojr0Ea2kZRJcvx/S0vDI=
+    secure: T4jI1aZQ+wDJBgGxcbdrtLz3zpXA9yZwmrsm8d3GqEGxApMtkKLWq0uqf86C8VkqaY6p4Nm1a/PTApV1isbuSoJbdeMVJA1MlYB/G7QMK7eI8nFqkw7Q4jzuOdEC0D1CPZx7ZWBn0bYxSRTcSeQSnGeGDy2KxekGSZFfIxe4APo=
   file:
-    - dist/stackdio-server-${STACKDIO_VERSION}.tar.gz
-    - dist/stackdio_server-${STACKDIO_VERSION}-py2.py3-none-any.whl
+    - dist/stackdio-${STACKDIO_VERSION}.tar.gz
+    - dist/stackdio-${STACKDIO_VERSION}-py2.py3-none-any.whl
   skip_cleanup: true
   on:
     tags: true
-    repo: stackdio/stackdio
+    repo: stackdio/stackdio-python-client
