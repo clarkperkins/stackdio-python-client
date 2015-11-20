@@ -296,12 +296,12 @@ class BlueprintGenerator(object):
 
         except TemplateNotFound:
             self.error_exit('Your template file {0} was not found.'.format(template_file))
-        except TemplateSyntaxError, e:
+        except TemplateSyntaxError as e:
             self.error_exit('Invalid template error at line {0}:\n{1}'.format(
                 e.lineno,
                 str(e)
             ))
-        except UndefinedError, e:
+        except UndefinedError as e:
             self.error_exit('Missing variable: {0}'.format(str(e)))
         except ValueError:
             self.error_exit('Invalid JSON.  Check your template file.')
