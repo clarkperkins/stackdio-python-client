@@ -17,17 +17,15 @@
 
 import logging
 
-from .http import get, post, patch
-from .exceptions import BlueprintException, StackException, IncompatibleVersionException
-
-from .blueprint import BlueprintMixin
-from .formula import FormulaMixin
 from .account import AccountMixin
+from .blueprint import BlueprintMixin
+from .exceptions import BlueprintException, StackException, IncompatibleVersionException
+from .formula import FormulaMixin
+from .http import get, post, patch
 from .image import ImageMixin
 from .region import RegionMixin
 from .settings import SettingsMixin
 from .stack import StackMixin
-
 from .version import _parse_version_string
 
 logger = logging.getLogger(__name__)
@@ -37,10 +35,7 @@ class StackdIO(BlueprintMixin, FormulaMixin, AccountMixin,
                ImageMixin, RegionMixin, StackMixin, SettingsMixin):
 
     def __init__(self, protocol="https", host="localhost", port=443,
-                 base_url=None, auth=None, auth_admin=None,
-                 verify=True):
-        """auth_admin is optional, only needed for creating provider, profile,
-        and base security groups"""
+                 base_url=None, auth=None, verify=True):
 
         super(StackdIO, self).__init__(auth=auth, verify=verify)
         if base_url:
@@ -52,7 +47,6 @@ class StackdIO(BlueprintMixin, FormulaMixin, AccountMixin,
                 port=port)
 
         self.auth = auth
-        self.auth_admin = auth_admin
 
         _, self.version = _parse_version_string(self.get_version())
 

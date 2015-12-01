@@ -7,22 +7,16 @@ import json
 import os
 import sys
 
-from cmd2 import Cmd
 import keyring
+from cmd2 import Cmd
 from requests import ConnectionError
 
-
+from stackdio.cli import mixins
 from stackdio.client import StackdIO
 
-from stackdio.cli import mixins
 
-
-class StackdioShell(
-        Cmd,
-        mixins.bootstrap.BootstrapMixin,
-        mixins.stacks.StackMixin,
-        mixins.formulas.FormulaMixin,
-        mixins.blueprints.BlueprintMixin):
+class StackdioShell(Cmd, mixins.bootstrap.BootstrapMixin, mixins.stacks.StackMixin,
+                    mixins.formulas.FormulaMixin, mixins.blueprints.BlueprintMixin):
 
     CFG_DIR = os.path.expanduser("~/.stackdio-cli/")
     CFG_FILE = os.path.join(CFG_DIR, "config.json")
@@ -192,7 +186,6 @@ class StackdioShell(
 
 
 def main():
-
     parser = argparse.ArgumentParser(
         description="Invoke the stackdio cli")
     parser.add_argument("--debug", action="store_true", help="Enable debugging output")

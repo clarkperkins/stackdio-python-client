@@ -24,10 +24,6 @@ class BlueprintException(Exception):
     pass
 
 
-class NoAdminException(Exception):
-    pass
-
-
 class IncompatibleVersionException(Exception):
     pass
 
