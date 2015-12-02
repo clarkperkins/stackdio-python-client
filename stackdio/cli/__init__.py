@@ -12,6 +12,7 @@ import keyring
 from requests import ConnectionError
 
 from stackdio.cli import mixins
+from stackdio.cli.shell import get_shell
 from stackdio.client import StackdIO
 from stackdio.client.version import __version__
 
@@ -42,64 +43,22 @@ def get_client():
     )
 
 
-def get_invoke(ctx, command):
-    def invoke(self, arg):
-        return ctx.invoke(command)
-    return invoke
+class StackdioObj(object):
 
-
-def get_help(command):
-    def help(self):
-        click.echo(command.help)
-    return help
-
-
-def get_shell(ctx):
-
-    # Make it a new-style class so we can use super!
-    class StackdioShell(Cmd, object):
-
-        def __init__(self):
-            super(StackdioShell, self).__init__()
-
-        prompt = 'stackdio > '
-
-        def emptyline(self):
-            pass
-
-        def do_quit(self, arg):
-            return True
-
-        def do_exit(self, arg):
-            return True
-
-        def do_EOF(self, arg):
-            return True
-
-        def get_names(self):
-            ret = super(StackdioShell, self).get_names()
-            # We don't want to display
-            ret.remove('do_EOF')
-            return ret
-
-    for name, command in ctx.command.commands.items():
-        setattr(StackdioShell, 'do_%s' % name.replace('-', '_'), get_invoke(ctx, command))
-
-        if command.help is not None:
-            setattr(StackdioShell, 'help_%s' % name.replace('-', '_'), get_help(command))
-
-    return StackdioShell()
+    def __init__(self, ctx):
+        super(StackdioObj, self).__init__()
+        self.shell = get_shell(ctx)
+        self.client = get_client()
 
 
 @click.group(context_settings=CONTEXT_SETTINGS, invoke_without_command=True)
 @click.version_option(__version__, '-v', '--version')
 @click.pass_context
 def stackdio(ctx):
-    ctx.client = get_client()
+    ctx.obj = StackdioObj(ctx)
 
     if ctx.invoked_subcommand is None:
-        shell = get_shell(ctx)
-        shell.cmdloop()
+        ctx.obj.shell.cmdloop()
 
 
 @stackdio.group()
@@ -131,7 +90,7 @@ def server_version():
     click.echo('stackdio-server, version {0}'.format(client.get_version()))
 
 
-class StackdioShell(mixins.bootstrap.BootstrapMixin, mixins.stacks.StackMixin,
+class StackdioShell(Cmd, mixins.bootstrap.BootstrapMixin, mixins.stacks.StackMixin,
                     mixins.formulas.FormulaMixin, mixins.blueprints.BlueprintMixin):
 
     CFG_DIR = os.path.expanduser("~/.stackdio-cli/")
@@ -146,11 +105,11 @@ class StackdioShell(mixins.bootstrap.BootstrapMixin, mixins.stacks.StackMixin,
         "help", "exit", "quit",
     ]
 
-#     Cmd.intro = """
-# ######################################################################
-#                       s  t  a  c  k  d  .  i  o
-# ######################################################################
-# """
+    intro = """
+######################################################################
+                      s  t  a  c  k  d  .  i  o
+######################################################################
+"""
 
     def __init__(self):
         mixins.bootstrap.BootstrapMixin.__init__(self)
