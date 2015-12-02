@@ -2,20 +2,136 @@
 
 from __future__ import print_function
 
-import argparse
 import json
 import os
 import sys
+from cmd import Cmd
 
+import click
 import keyring
-from cmd2 import Cmd
 from requests import ConnectionError
 
 from stackdio.cli import mixins
 from stackdio.client import StackdIO
+from stackdio.client.version import __version__
 
 
-class StackdioShell(Cmd, mixins.bootstrap.BootstrapMixin, mixins.stacks.StackMixin,
+CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
+
+CFG_DIR = os.path.expanduser("~/.stackdio-cli/")
+CFG_FILE = os.path.join(CFG_DIR, "config.json")
+KEYRING_SERVICE = "stackdio_cli"
+
+
+def get_client():
+    if not os.path.isfile(CFG_FILE):
+        click.echo('It looks like you haven\'t used this CLI before.  Please run '
+                   '`stackdio-cli configure`'.format(sys.argv[0]))
+        sys.exit(1)
+
+    config = json.load(open(CFG_FILE, 'r'))
+    config['blueprint_dir'] = os.path.expanduser(config.get('blueprint_dir', ''))
+
+    return StackdIO(
+        base_url=config["url"],
+        auth=(
+            config["username"],
+            keyring.get_password(KEYRING_SERVICE, config.get("username") or "")
+        ),
+        verify=config.get('verify', True)
+    )
+
+
+def get_invoke(ctx, command):
+    def invoke(self, arg):
+        return ctx.invoke(command)
+    return invoke
+
+
+def get_help(command):
+    def help(self):
+        click.echo(command.help)
+    return help
+
+
+def get_shell(ctx):
+
+    # Make it a new-style class so we can use super!
+    class StackdioShell(Cmd, object):
+
+        def __init__(self):
+            super(StackdioShell, self).__init__()
+
+        prompt = 'stackdio > '
+
+        def emptyline(self):
+            pass
+
+        def do_quit(self, arg):
+            return True
+
+        def do_exit(self, arg):
+            return True
+
+        def do_EOF(self, arg):
+            return True
+
+        def get_names(self):
+            ret = super(StackdioShell, self).get_names()
+            # We don't want to display
+            ret.remove('do_EOF')
+            return ret
+
+    for name, command in ctx.command.commands.items():
+        setattr(StackdioShell, 'do_%s' % name.replace('-', '_'), get_invoke(ctx, command))
+
+        if command.help is not None:
+            setattr(StackdioShell, 'help_%s' % name.replace('-', '_'), get_help(command))
+
+    return StackdioShell()
+
+
+@click.group(context_settings=CONTEXT_SETTINGS, invoke_without_command=True)
+@click.version_option(__version__, '-v', '--version')
+@click.pass_context
+def stackdio(ctx):
+    ctx.client = get_client()
+
+    if ctx.invoked_subcommand is None:
+        shell = get_shell(ctx)
+        shell.cmdloop()
+
+
+@stackdio.group()
+def stacks():
+    pass
+
+
+@stackdio.group()
+def blueprints():
+    """
+    Foo bar
+    """
+    pass
+
+
+@stackdio.group()
+def formulas():
+    pass
+
+
+@stackdio.command()
+def configure():
+    pass
+
+
+@stackdio.command('server-version')
+def server_version():
+    client = get_client()
+    click.echo('stackdio-server, version {0}'.format(client.get_version()))
+
+
+class StackdioShell(mixins.bootstrap.BootstrapMixin, mixins.stacks.StackMixin,
                     mixins.formulas.FormulaMixin, mixins.blueprints.BlueprintMixin):
 
     CFG_DIR = os.path.expanduser("~/.stackdio-cli/")
@@ -30,14 +146,13 @@ class StackdioShell(Cmd, mixins.bootstrap.BootstrapMixin, mixins.stacks.StackMix
         "help", "exit", "quit",
     ]
 
-    Cmd.intro = """
-######################################################################
-                      s  t  a  c  k  d  .  i  o
-######################################################################
-"""
+#     Cmd.intro = """
+# ######################################################################
+#                       s  t  a  c  k  d  .  i  o
+# ######################################################################
+# """
 
     def __init__(self):
-        Cmd.__init__(self)
         mixins.bootstrap.BootstrapMixin.__init__(self)
         self._load_config()
         if 'url' in self.config and self.config['url']:
@@ -186,21 +301,23 @@ class StackdioShell(Cmd, mixins.bootstrap.BootstrapMixin, mixins.stacks.StackMix
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Invoke the stackdio cli")
-    parser.add_argument("--debug", action="store_true", help="Enable debugging output")
-    args = parser.parse_args()
+    stackdio()
 
-    # an ugly hack to work around the fact that cmd2 is using optparse to parse
-    # arguments for the commands; not sure what the "right" fix is, but as long
-    # as we assume that we don't want any of our arguments to get passed into
-    # the cmdloop this seems ok
-    sys.argv = sys.argv[0:1]
-
-    shell = StackdioShell()
-    if args.debug:
-        shell.debug = True
-    shell.cmdloop()
+    # parser = argparse.ArgumentParser(
+    #     description="Invoke the stackdio cli")
+    # parser.add_argument("--debug", action="store_true", help="Enable debugging output")
+    # args = parser.parse_args()
+    #
+    # # an ugly hack to work around the fact that cmd2 is using optparse to parse
+    # # arguments for the commands; not sure what the "right" fix is, but as long
+    # # as we assume that we don't want any of our arguments to get passed into
+    # # the cmdloop this seems ok
+    # sys.argv = sys.argv[0:1]
+    #
+    # shell = StackdioShell()
+    # if args.debug:
+    #     shell.debug = True
+    # shell.cmdloop()
 
 
 if __name__ == '__main__':

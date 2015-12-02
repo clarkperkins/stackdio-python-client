@@ -15,6 +15,8 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
+
 import os
 import sys
 
@@ -49,8 +51,9 @@ CFG_DIR = os.path.expanduser("~/.stackdio-cli")
 requirements = [
     'Jinja2==2.7.3',
     'PyYAML==3.11',
-    'cmd2==0.6.7',
+    'click>=6.0,<7.0',
     'keyring==3.7',
+    'readline',
     'requests>=2.4.0,<2.6.0',
     'simplejson==3.4.0',
 ]
@@ -64,8 +67,6 @@ testing_requirements = [
 if __name__ == "__main__":
     test_python_version()
 
-    # Call the setup method from setuptools that does all the heavy lifting
-    # of packaging stackdio-client
     setup(
         name='stackdio',
         version=__version__,
@@ -100,7 +101,6 @@ if __name__ == "__main__":
         classifiers=[
             'Development Status :: 4 - Beta',
             'Environment :: Web Environment',
-            'Framework :: Django',
             'Intended Audience :: Developers',
             'Intended Audience :: Information Technology',
             'Intended Audience :: System Administrators',
