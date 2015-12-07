@@ -16,12 +16,11 @@
 #
 
 import os
-from cmd import Cmd
+from cmd2 import Cmd
 
 import click
 
 from stackdio.client.version import __version__
-
 
 try:
     import readline

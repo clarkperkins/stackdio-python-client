@@ -14,30 +14,35 @@ from requests import ConnectionError
 from stackdio.cli import mixins
 from stackdio.cli.shell import get_shell
 from stackdio.client import StackdIO
+from stackdio.client.config import StackdioConfig
+from stackdio.client.exceptions import MissingConfigException
 from stackdio.client.version import __version__
 
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
-CFG_DIR = os.path.expanduser("~/.stackdio-cli/")
-CFG_FILE = os.path.join(CFG_DIR, "config.json")
-KEYRING_SERVICE = "stackdio_cli"
+
+KEYRING_SERVICE = 'stackdio_cli'
 
 
-def get_client():
-    if not os.path.isfile(CFG_FILE):
-        click.echo('It looks like you haven\'t used this CLI before.  Please run '
-                   '`stackdio-cli configure`'.format(sys.argv[0]))
-        sys.exit(1)
+def load_config(fail_on_misconfigure, section='stackdio'):
+    try:
+        return StackdioConfig(section)
+    except MissingConfigException:
+        if fail_on_misconfigure:
+            click.echo('It looks like you haven\'t used this CLI before.  Please run '
+                       '`stackdio-cli configure`'.format(sys.argv[0]))
+            sys.exit(1)
+        else:
+            return None
 
-    config = json.load(open(CFG_FILE, 'r'))
-    config['blueprint_dir'] = os.path.expanduser(config.get('blueprint_dir', ''))
 
+def get_client(config):
     return StackdIO(
-        base_url=config["url"],
+        base_url=config['url'],
         auth=(
-            config["username"],
-            keyring.get_password(KEYRING_SERVICE, config.get("username") or "")
+            config['username'],
+            keyring.get_password(KEYRING_SERVICE, config.get('username') or '')
         ),
         verify=config.get('verify', True)
     )
@@ -45,17 +50,19 @@ def get_client():
 
 class StackdioObj(object):
 
-    def __init__(self, ctx):
+    def __init__(self, ctx, fail_on_misconfigure):
         super(StackdioObj, self).__init__()
+        self.config = load_config(fail_on_misconfigure)
         self.shell = get_shell(ctx)
-        self.client = get_client()
+        if self.config:
+            self.client = get_client(self.config)
 
 
 @click.group(context_settings=CONTEXT_SETTINGS, invoke_without_command=True)
 @click.version_option(__version__, '-v', '--version')
 @click.pass_context
 def stackdio(ctx):
-    ctx.obj = StackdioObj(ctx)
+    ctx.obj = StackdioObj(ctx, ctx.invoked_subcommand != 'configure')
 
     if ctx.invoked_subcommand is None:
         ctx.obj.shell.cmdloop()
@@ -81,7 +88,11 @@ def formulas():
 
 @stackdio.command()
 def configure():
-    pass
+    config = StackdioConfig(create=True)
+
+    config.prompt_for_config()
+
+    config.save()
 
 
 @stackdio.command('server-version')

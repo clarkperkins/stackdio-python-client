@@ -15,8 +15,6 @@
 # limitations under the License.
 #
 
-from __future__ import unicode_literals
-
 import os
 import sys
 
@@ -46,12 +44,13 @@ SHORT_DESCRIPTION = ('A cloud deployment, automation, and orchestration '
 with open('README.md') as f:
     LONG_DESCRIPTION = f.read()
 
-CFG_DIR = os.path.expanduser("~/.stackdio-cli")
+CFG_DIR = os.path.join(os.path.expanduser('~'), '.stackdio-cli')
 
 requirements = [
     'Jinja2==2.7.3',
     'PyYAML==3.11',
     'click>=6.0,<7.0',
+    'cmd2>=0.6,<0.7',
     'keyring==3.7',
     'readline',
     'requests>=2.4.0,<2.6.0',
@@ -64,7 +63,7 @@ testing_requirements = [
     'pylint<=1.2.0',
 ]
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     test_python_version()
 
     setup(
@@ -83,8 +82,8 @@ if __name__ == "__main__":
                 [
                     'bootstrap.yaml',
                 ]),
-            (os.path.join(CFG_DIR, "blueprints"),
-                ["blueprints/%s" % f for f in os.listdir("blueprints")]),
+            (os.path.join(CFG_DIR, 'blueprints'),
+                ['blueprints/%s' % f for f in os.listdir('blueprints')]),
         ],
         zip_safe=False,
         install_requires=requirements,
@@ -113,7 +112,6 @@ if __name__ == "__main__":
             'Programming Language :: Python :: 3.2',
             'Programming Language :: Python :: 3.3',
             'Programming Language :: Python :: 3.4',
-            'Programming Language :: Python :: 3.5',
             'Topic :: System :: Clustering',
             'Topic :: System :: Distributed Computing',
         ]
