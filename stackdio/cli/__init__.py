@@ -24,8 +24,8 @@ class StackdioShell(
         mixins.formulas.FormulaMixin,
         mixins.blueprints.BlueprintMixin):
 
-    CFG_DIR = os.path.expanduser("~/.stackdio-cli/")
-    CFG_FILE = os.path.join(CFG_DIR, "config.json")
+    CFG_DIR = os.path.expanduser(os.getenv('STACKDIO_CFG_DIR',"~/.stackdio-cli/"))
+    CFG_FILE = os.path.join(CFG_DIR, os.getenv('STACKDIO_CFG_FILE',"config.json"))
     BOOTSTRAP_FILE = os.path.join(CFG_DIR, "bootstrap.yaml")
     KEYRING_SERVICE = "stackdio_cli"
     PROMPT = "\n{username} @ {url}\n> "
