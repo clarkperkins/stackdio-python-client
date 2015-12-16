@@ -50,9 +50,8 @@ requirements = [
     'Jinja2==2.7.3',
     'PyYAML==3.11',
     'click>=6.0,<7.0',
-    'cmd2>=0.6,<0.7',
+    'click-shell==0.1',
     'keyring==3.7',
-    'readline',
     'requests>=2.4.0,<2.6.0',
     'simplejson==3.4.0',
 ]

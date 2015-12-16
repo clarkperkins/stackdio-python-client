@@ -8,11 +8,11 @@ import sys
 from cmd import Cmd
 
 import click
+import click_shell
 import keyring
 from requests import ConnectionError
 
 from stackdio.cli import mixins
-from stackdio.cli.shell import get_shell
 from stackdio.client import StackdIO
 from stackdio.client.config import StackdioConfig
 from stackdio.client.exceptions import MissingConfigException
@@ -21,6 +21,7 @@ from stackdio.client.version import __version__
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
+HIST_FILE = os.path.join(os.path.expanduser('~'), '.stackdio-cli', 'history')
 
 KEYRING_SERVICE = 'stackdio_cli'
 
@@ -53,19 +54,16 @@ class StackdioObj(object):
     def __init__(self, ctx, fail_on_misconfigure):
         super(StackdioObj, self).__init__()
         self.config = load_config(fail_on_misconfigure)
-        self.shell = get_shell(ctx)
         if self.config:
             self.client = get_client(self.config)
 
 
-@click.group(context_settings=CONTEXT_SETTINGS, invoke_without_command=True)
+@click_shell.shell(prompt='stackdio > ', intro='stackdio shell v{0}'.format(__version__),
+                   hist_file=HIST_FILE, context_settings=CONTEXT_SETTINGS)
 @click.version_option(__version__, '-v', '--version')
 @click.pass_context
 def stackdio(ctx):
     ctx.obj = StackdioObj(ctx, ctx.invoked_subcommand != 'configure')
-
-    if ctx.invoked_subcommand is None:
-        ctx.obj.shell.cmdloop()
 
 
 @stackdio.group()
@@ -75,10 +73,15 @@ def stacks():
 
 @stackdio.group()
 def blueprints():
-    """
-    Foo bar
-    """
     pass
+
+
+@blueprints.command()
+@click.option('--template', '-t')
+@click.option('--var-file', '-v', multiple=True)
+def create(template, var_file):
+    click.echo(template)
+    click.echo(var_file)
 
 
 @stackdio.group()
@@ -96,8 +99,9 @@ def configure():
 
 
 @stackdio.command('server-version')
-def server_version():
-    client = get_client()
+@click.pass_obj
+def server_version(obj):
+    client = obj.client
     click.echo('stackdio-server, version {0}'.format(client.get_version()))
 
 

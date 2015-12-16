@@ -31,8 +31,15 @@ CFG_FILE = os.path.join(CFG_DIR, 'client.cfg')
 
 class StackdioConfig(object):
 
+    BOOL_MAP = {
+        str(True): True,
+        str(False): False,
+    }
+
     def __init__(self, section='stackdio', config_file=CFG_FILE, create=False):
         super(StackdioConfig, self).__init__()
+
+        self.section = section
 
         self._cfg_file = config_file
 
@@ -47,10 +54,10 @@ class StackdioConfig(object):
             self._config.read(config_file)
 
             # Make the blueprint dir usable
-            new_blueprint_dir = os.path.expanduser(self.get('blueprint_dir'))
-            self._config.set(section, 'blueprint_dir', new_blueprint_dir)
-
-        self.section = section
+            blueprint_dir = self.get('blueprint_dir')
+            if blueprint_dir:
+                new_blueprint_dir = os.path.expanduser(blueprint_dir)
+                self._config.set(section, 'blueprint_dir', new_blueprint_dir)
 
     def save(self):
         with open(self._cfg_file, 'w') as f:
@@ -58,11 +65,17 @@ class StackdioConfig(object):
 
     def __getitem__(self, item):
         try:
-            return self._config.get(self.section, item)
+            ret = self._config.get(self.section, item)
+            if ret in self.BOOL_MAP:
+                return self.BOOL_MAP[ret]
+            else:
+                return str(ret)
         except NoOptionError:
             raise KeyError(item)
 
     def __setitem__(self, key, value):
+        if isinstance(value, bool):
+            value = str(value)
         self._config.set(self.section, key, value)
 
     def get(self, item, default=None):
@@ -84,7 +97,7 @@ class StackdioConfig(object):
         except ConnectionError:
             return False
         except MissingSchema:
-            print("You might have forgotten http:// or https://")
+            click.echo('You might have forgotten http:// or https://')
             return False
 
     def get_url(self):
