@@ -13,9 +13,8 @@ import keyring
 from requests import ConnectionError
 
 from stackdio.cli import mixins
-from stackdio.client import StackdIO
+from stackdio.client import StackdioClient
 from stackdio.client.config import StackdioConfig
-from stackdio.client.exceptions import MissingConfigException
 from stackdio.client.version import __version__
 
 
@@ -39,7 +38,7 @@ def load_config(fail_on_misconfigure, section='stackdio'):
 
 
 def get_client(config):
-    return StackdIO(
+    return StackdioClient(
         base_url=config['url'],
         auth=(
             config['username'],
@@ -64,29 +63,6 @@ class StackdioObj(object):
 @click.pass_context
 def stackdio(ctx):
     ctx.obj = StackdioObj(ctx, ctx.invoked_subcommand != 'configure')
-
-
-@stackdio.group()
-def stacks():
-    pass
-
-
-@stackdio.group()
-def blueprints():
-    pass
-
-
-@blueprints.command()
-@click.option('--template', '-t')
-@click.option('--var-file', '-v', multiple=True)
-def create(template, var_file):
-    click.echo(template)
-    click.echo(var_file)
-
-
-@stackdio.group()
-def formulas():
-    pass
 
 
 @stackdio.command()
@@ -150,8 +126,8 @@ class StackdioShell(Cmd, mixins.bootstrap.BootstrapMixin, mixins.stacks.StackMix
             return ["do_initial_setup", "do_help"]
 
     def _init_stacks(self):
-        """Instantiate a StackdIO object"""
-        self.stacks = StackdIO(
+        """Instantiate a StackdioClient object"""
+        self.stacks = StackdioClient(
             base_url=self.config["url"],
             auth=(
                 self.config["username"],
@@ -275,7 +251,7 @@ class StackdioShell(Cmd, mixins.bootstrap.BootstrapMixin, mixins.stacks.StackMix
 
 
 def main():
-    stackdio()
+    stackdio(obj={})
 
     # parser = argparse.ArgumentParser(
     #     description="Invoke the stackdio cli")

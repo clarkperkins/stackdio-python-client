@@ -48,7 +48,7 @@ CFG_DIR = os.path.join(os.path.expanduser('~'), '.stackdio-cli')
 
 requirements = [
     'Jinja2==2.7.3',
-    'PyYAML==3.11',
+    'PyYAML>=3.10',
     'click>=6.0,<7.0',
     'click-shell==0.1',
     'keyring==3.7',

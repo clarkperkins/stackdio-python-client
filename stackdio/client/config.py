@@ -22,7 +22,6 @@ import requests
 from requests.exceptions import ConnectionError, MissingSchema
 
 from stackdio.client.compat import ConfigParser, NoOptionError
-from stackdio.client.exceptions import MissingConfigException
 
 
 CFG_DIR = os.path.join(os.path.expanduser('~'), '.stackdio')
@@ -30,25 +29,27 @@ CFG_FILE = os.path.join(CFG_DIR, 'client.cfg')
 
 
 class StackdioConfig(object):
+    """
+    A wrapper around python's ConfigParser class
+    """
 
     BOOL_MAP = {
         str(True): True,
         str(False): False,
     }
 
-    def __init__(self, section='stackdio', config_file=CFG_FILE, create=False):
+    def __init__(self, config_file=CFG_FILE, section='default'):
         super(StackdioConfig, self).__init__()
 
         self.section = section
 
         self._cfg_file = config_file
 
-        if not create and not os.path.isfile(config_file):
-            raise MissingConfigException('{0} does not exist'.format(config_file))
+        self.usable_config = os.path.isfile(config_file)
 
         self._config = ConfigParser()
 
-        if create:
+        if not self.usable_config:
             self._config.add_section(section)
         else:
             self._config.read(config_file)

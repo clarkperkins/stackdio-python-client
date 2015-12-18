@@ -19,9 +19,15 @@ import logging
 
 from .account import AccountMixin
 from .blueprint import BlueprintMixin
-from .exceptions import BlueprintException, StackException, IncompatibleVersionException
+from .config import StackdioConfig
+from .exceptions import (
+    BlueprintException,
+    StackException,
+    IncompatibleVersionException,
+    MissingUrlException
+)
 from .formula import FormulaMixin
-from .http import get, post, patch
+from .http import HttpMixin, get, post, patch
 from .image import ImageMixin
 from .region import RegionMixin
 from .settings import SettingsMixin
@@ -29,30 +35,35 @@ from .stack import StackMixin
 from .version import _parse_version_string
 
 logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 
-class StackdIO(BlueprintMixin, FormulaMixin, AccountMixin,
-               ImageMixin, RegionMixin, StackMixin, SettingsMixin):
+class StackdioClient(BlueprintMixin, FormulaMixin, AccountMixin, ImageMixin,
+                     RegionMixin, StackMixin, SettingsMixin, HttpMixin):
 
-    def __init__(self, protocol="https", host="localhost", port=443,
-                 base_url=None, auth=None, verify=True):
+    def __init__(self, url=None, username=None, password=None, verify=True):
+        self.config = StackdioConfig()
 
-        super(StackdIO, self).__init__(auth=auth, verify=verify)
-        if base_url:
-            self.url = base_url if base_url.endswith('/') else "%s/" % base_url
-        else:
-            self.url = "{protocol}://{host}:{port}/api/".format(
-                protocol=protocol,
-                host=host,
-                port=port)
+        if self.config.usable_config:
+            # Grab stuff from the config
+            url = self.config['url']
+            username = self.config['username']
+            verify = self.config['verify']
 
-        self.auth = auth
+        super(StackdioClient, self).__init__(url=url, auth=(username, password), verify=verify)
+        self.url = url
 
-        _, self.version = _parse_version_string(self.get_version())
+        try:
+            _, self.version = _parse_version_string(self.get_version())
+        except MissingUrlException:
+            self.version = None
 
-        if self.version[0] != 0 or self.version[1] != 7:
+        if self.version and self.version[0] != 0 or self.version[1] != 7:
             raise IncompatibleVersionException('Server version {0}.{1}.{2} not '
                                                'supported.'.format(**self.version))
+
+    def usable(self):
+        return self.config.usable_config
 
     @get('')
     def get_root(self):
@@ -67,12 +78,12 @@ class StackdIO(BlueprintMixin, FormulaMixin, AccountMixin,
         return resp['version']
 
     @post('cloud/security_groups/')
-    def create_security_group(self, name, description, cloud_provider, is_default=True):
-        """Create a security group"""
+    def create_security_group(self, name, description, cloud_account, group_id, is_default=True):
 
         return {
-            "name": name,
-            "description": description,
-            "cloud_provider": cloud_provider,
-            "is_default": is_default
+            'name': name,
+            'description': description,
+            'cloud_account': cloud_account,
+            'group_id': group_id,
+            'is_default': is_default
         }

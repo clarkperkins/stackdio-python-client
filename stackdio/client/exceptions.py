@@ -16,7 +16,7 @@
 #
 
 
-class MissingConfigException(Exception):
+class MissingUrlException(Exception):
     pass
 
 

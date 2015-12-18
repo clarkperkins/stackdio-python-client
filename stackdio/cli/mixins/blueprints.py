@@ -170,7 +170,7 @@ class BlueprintMixin(Cmd):
         if not bootstrap:
             print("Creating blueprint")
 
-        r = self.stacks.create_blueprint(bp_json)
+        r = self.stacks.create_blueprint(bp_json, raise_for_status=False)
         print(json.dumps(r, indent=2))
 
     def _create_single(self, template_file, var_files, no_prompt):
