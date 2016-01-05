@@ -18,6 +18,7 @@
 import os
 
 import click
+import keyring
 import requests
 from requests.exceptions import ConnectionError, MissingSchema
 
@@ -33,12 +34,14 @@ class StackdioConfig(object):
     A wrapper around python's ConfigParser class
     """
 
+    KEYRING_SERVICE = 'stackdio_cli'
+
     BOOL_MAP = {
         str(True): True,
         str(False): False,
     }
 
-    def __init__(self, config_file=CFG_FILE, section='default'):
+    def __init__(self, config_file=CFG_FILE, section='main'):
         super(StackdioConfig, self).__init__()
 
         self.section = section
@@ -54,6 +57,11 @@ class StackdioConfig(object):
         else:
             self._config.read(config_file)
 
+            username = self.get('username')
+
+            if username is not None:
+                self['password'] = keyring.get_password(self.KEYRING_SERVICE, username)
+
             # Make the blueprint dir usable
             blueprint_dir = self.get('blueprint_dir')
             if blueprint_dir:
@@ -63,6 +71,13 @@ class StackdioConfig(object):
     def save(self):
         with open(self._cfg_file, 'w') as f:
             self._config.write(f)
+
+    def __contains__(self, item):
+        try:
+            self._config.get(self.section, item)
+            return True
+        except NoOptionError:
+            return False
 
     def __getitem__(self, item):
         try:

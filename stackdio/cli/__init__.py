@@ -8,13 +8,10 @@ import sys
 from cmd import Cmd
 
 import click
-import click_shell
-import keyring
 from requests import ConnectionError
 
-from stackdio.cli import mixins
+from stackdio.cli.mixins import blueprints, bootstrap, formulas, stacks
 from stackdio.client import StackdioClient
-from stackdio.client.config import StackdioConfig
 from stackdio.client.version import __version__
 
 
@@ -22,67 +19,40 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
 HIST_FILE = os.path.join(os.path.expanduser('~'), '.stackdio-cli', 'history')
 
-KEYRING_SERVICE = 'stackdio_cli'
 
-
-def load_config(fail_on_misconfigure, section='stackdio'):
-    try:
-        return StackdioConfig(section)
-    except MissingConfigException:
-        if fail_on_misconfigure:
-            click.echo('It looks like you haven\'t used this CLI before.  Please run '
-                       '`stackdio-cli configure`'.format(sys.argv[0]))
-            sys.exit(1)
-        else:
-            return None
-
-
-def get_client(config):
-    return StackdioClient(
-        base_url=config['url'],
-        auth=(
-            config['username'],
-            keyring.get_password(KEYRING_SERVICE, config.get('username') or '')
-        ),
-        verify=config.get('verify', True)
-    )
-
-
-class StackdioObj(object):
-
-    def __init__(self, ctx, fail_on_misconfigure):
-        super(StackdioObj, self).__init__()
-        self.config = load_config(fail_on_misconfigure)
-        if self.config:
-            self.client = get_client(self.config)
-
-
-@click_shell.shell(prompt='stackdio > ', intro='stackdio shell v{0}'.format(__version__),
-                   hist_file=HIST_FILE, context_settings=CONTEXT_SETTINGS)
+@click.group(context_settings=CONTEXT_SETTINGS)
 @click.version_option(__version__, '-v', '--version')
 @click.pass_context
 def stackdio(ctx):
-    ctx.obj = StackdioObj(ctx, ctx.invoked_subcommand != 'configure')
+    client = StackdioClient()
+    if ctx.invoked_subcommand not in ('configure', None) and not client.usable():
+        raise click.UsageError('It looks like you haven\'t used this CLI before.  Please run '
+                               '`stackdio-cli configure`')
+
+    # Put the client in the obj
+    ctx.obj['client'] = client
 
 
 @stackdio.command()
-def configure():
-    config = StackdioConfig(create=True)
-
-    config.prompt_for_config()
-
-    config.save()
+@click.pass_obj
+def configure(obj):
+    client = obj['client']
+    print('configuring')
 
 
 @stackdio.command('server-version')
 @click.pass_obj
 def server_version(obj):
-    client = obj.client
+    client = obj['client']
     click.echo('stackdio-server, version {0}'.format(client.get_version()))
 
 
-class StackdioShell(Cmd, mixins.bootstrap.BootstrapMixin, mixins.stacks.StackMixin,
-                    mixins.formulas.FormulaMixin, mixins.blueprints.BlueprintMixin):
+# Add all our other commands
+stackdio.add_command(blueprints.blueprints)
+
+
+class StackdioShell(Cmd, bootstrap.BootstrapMixin, stacks.StackMixin,
+                    formulas.FormulaMixin):
 
     CFG_DIR = os.path.expanduser("~/.stackdio-cli/")
     CFG_FILE = os.path.join(CFG_DIR, "config.json")
@@ -108,33 +78,6 @@ class StackdioShell(Cmd, mixins.bootstrap.BootstrapMixin, mixins.stacks.StackMix
         if 'url' in self.config and self.config['url']:
             self._init_stacks()
         self._validate_auth()
-
-    def preloop(self):
-        self._setprompt()
-
-    def precmd(self, line):
-        self._setprompt()
-        return line
-
-    def postloop(self):
-        print("\nGoodbye!")
-
-    def get_names(self):
-        if self.validated:
-            return ["do_%s" % c for c in self.HELP_CMDS]
-        else:
-            return ["do_initial_setup", "do_help"]
-
-    def _init_stacks(self):
-        """Instantiate a StackdioClient object"""
-        self.stacks = StackdioClient(
-            base_url=self.config["url"],
-            auth=(
-                self.config["username"],
-                keyring.get_password(self.KEYRING_SERVICE, self.config.get("username") or "")
-            ),
-            verify=self.config.get('verify', True)
-        )
 
     def _load_config(self):
         """Attempt to load config file, otherwise fallback to DEFAULT_CONFIG"""
@@ -213,23 +156,6 @@ class StackdioShell(Cmd, mixins.bootstrap.BootstrapMixin, mixins.stacks.StackMix
                 "## Your account is missing the public key, run 'bootstrap' to fix",
                 "red"))
 
-    def _print_summary(self, title, components):
-        num_components = len(components)
-        print("## {0} {1}{2}".format(
-            num_components,
-            title,
-            "s" if num_components == 0 or num_components > 1 else ""))
-
-        for item in components:
-            print("- Title: {0}\n  Description: {1}".format(
-                item.get("title"), item.get("description")))
-
-            if "status_detail" in item:
-                print("  Status Detail: {0}\n".format(
-                    item.get("status_detail")))
-            else:
-                print("")
-
     def do_account_summary(self, args=None):
         """Get a summary of your account."""
         sys.stdout.write("Polling {0} ... ".format(self.config["url"]))
@@ -251,23 +177,8 @@ class StackdioShell(Cmd, mixins.bootstrap.BootstrapMixin, mixins.stacks.StackMix
 
 
 def main():
+    # Just run our CLI tool
     stackdio(obj={})
-
-    # parser = argparse.ArgumentParser(
-    #     description="Invoke the stackdio cli")
-    # parser.add_argument("--debug", action="store_true", help="Enable debugging output")
-    # args = parser.parse_args()
-    #
-    # # an ugly hack to work around the fact that cmd2 is using optparse to parse
-    # # arguments for the commands; not sure what the "right" fix is, but as long
-    # # as we assume that we don't want any of our arguments to get passed into
-    # # the cmdloop this seems ok
-    # sys.argv = sys.argv[0:1]
-    #
-    # shell = StackdioShell()
-    # if args.debug:
-    #     shell.debug = True
-    # shell.cmdloop()
 
 
 if __name__ == '__main__':

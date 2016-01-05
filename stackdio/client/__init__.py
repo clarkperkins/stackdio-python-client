@@ -44,26 +44,42 @@ class StackdioClient(BlueprintMixin, FormulaMixin, AccountMixin, ImageMixin,
     def __init__(self, url=None, username=None, password=None, verify=True):
         self.config = StackdioConfig()
 
+        self.url = None
+        self.username = None
+        self.password = None
+        self.verify = None
+
         if self.config.usable_config:
             # Grab stuff from the config
-            url = self.config['url']
-            username = self.config['username']
-            verify = self.config['verify']
+            self.url = self.config['url']
+            self.username = self.config['username']
+            self.password = self.config['password']
+            self.verify = self.config['verify']
 
-        super(StackdioClient, self).__init__(url=url, auth=(username, password), verify=verify)
-        self.url = url
+        if url is not None:
+            self.url = url
+
+        if username is not None and password is not None:
+            self.username = username
+            self.password = password
+
+        if verify is not None:
+            self.verify = verify
+
+        super(StackdioClient, self).__init__(url=self.url, auth=(self.username, self.password),
+                                             verify=self.verify)
 
         try:
             _, self.version = _parse_version_string(self.get_version())
         except MissingUrlException:
             self.version = None
 
-        if self.version and self.version[0] != 0 or self.version[1] != 7:
+        if self.version and (self.version[0] != 0 or self.version[1] != 7):
             raise IncompatibleVersionException('Server version {0}.{1}.{2} not '
                                                'supported.'.format(**self.version))
 
     def usable(self):
-        return self.config.usable_config
+        return self.config.usable_config or self.url
 
     @get('')
     def get_root(self):
