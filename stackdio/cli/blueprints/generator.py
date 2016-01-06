@@ -4,19 +4,12 @@ import sys
 import os
 import json
 
+import click
 import yaml
 from jinja2 import Environment, FileSystemLoader, StrictUndefined, meta
 from jinja2.exceptions import TemplateNotFound, TemplateSyntaxError, UndefinedError
 from jinja2.nodes import Assign, Block, Const, If, Not
 from jinja2.filters import do_replace, evalcontextfilter
-
-
-COLORS = {
-    'brown': '\033[0;33m',
-    'green': '\033[0;32m',
-    'red': '\033[01;31m',
-    'endc': '\033[0m',
-}
 
 
 class BlueprintException(Exception):
@@ -67,9 +60,8 @@ class BlueprintGenerator(object):
         :param newlines: the number of newlines to print at the end
         :return: None
         """
-        self.out_stream.write('{0}{1}{2}'.format(COLORS['red'], message, COLORS['endc']))
-        for i in range(0, newlines):
-            self.out_stream.write('\n')
+        click.secho(message, file=self.out_stream, nl=False, fg='red')
+        click.echo('\n' * newlines, nl=False)
         raise BlueprintException()
 
     def warning(self, message, newlines=1):
@@ -79,9 +71,8 @@ class BlueprintGenerator(object):
         :param newlines: The number of newlines to print at the end
         :return: None
         """
-        self.out_stream.write('{0}{1}{2}'.format(COLORS['brown'], message, COLORS['endc']))
-        for i in range(0, newlines):
-            self.out_stream.write('\n')
+        click.secho(message, file=self.out_stream, nl=False, fg='yellow')
+        click.echo('\n' * newlines, nl=False)
 
     def prompt(self, message):
         """
@@ -89,7 +80,7 @@ class BlueprintGenerator(object):
         :param message: the prompt message
         :return: the value the user inputted
         """
-        self.out_stream.write('{0}{1}{2}'.format(COLORS['green'], message, COLORS['endc']))
+        click.secho(message, file=self.out_stream, nl=False, fg='green')
         raw = sys.stdin.readline().strip()
 
         # This should work nicely - if yaml can't parse it properly, then it should be fine to just
@@ -202,7 +193,7 @@ class BlueprintGenerator(object):
 
         :param template_file: The relative location of the template.  It must be in one of the
         directories you specified when creating the Generator object.
-        :param var_file: The location of the variable file (relative or absolute)
+        :param var_files: The location of the variable file(s) (relative or absolute)
         :param variables: A dict of variables to put in the template.
         :param prompt: Option to prompt for missing variables
         :param debug: Print the output of the template before trying to parse it as JSON
@@ -215,7 +206,7 @@ class BlueprintGenerator(object):
 
             context = {}
             for var_file in var_files:
-                yaml_parsed = yaml.safe_load(open(var_file, 'r'))
+                yaml_parsed = yaml.safe_load(var_file)
                 if yaml_parsed:
                     context.update(yaml_parsed)
 
@@ -287,9 +278,9 @@ class BlueprintGenerator(object):
             template_json = template.render(**context)
 
             if debug:
-                print('\n')
-                print(template_json)
-                print('\n')
+                click.echo('\n')
+                click.echo(template_json)
+                click.echo('\n')
 
             # Return a dict object rather than a string
             return json.loads(template_json)

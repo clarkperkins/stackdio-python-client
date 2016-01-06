@@ -1,15 +1,10 @@
-from __future__ import print_function
 
 import json
 import os
-import argparse
-import sys
 
 import click
 import yaml
-from cmd2 import Cmd
 
-from stackdio.client.exceptions import StackException
 from stackdio.cli.blueprints.generator import BlueprintGenerator, BlueprintException
 from stackdio.cli.utils import print_summary
 
@@ -20,6 +15,9 @@ class BlueprintNotFound(Exception):
 
 @click.group()
 def blueprints():
+    """
+    Perform actions on blueprints
+    """
     pass
 
 
@@ -124,11 +122,6 @@ def create_blueprint(obj, mapping, template, var_file, no_prompt):
     """
     Create a blueprint
     """
-    print(mapping)
-    print(template)
-    print(var_file)
-    print(no_prompt)
-
     client = obj['client']
 
     if not template and not mapping:
@@ -165,18 +158,12 @@ def create_blueprint(obj, mapping, template, var_file, no_prompt):
 
 @blueprints.command(name='create-all')
 @click.pass_obj
-@click.option('--no-prompt', is_flag=True, default=True,
-              help='Don\'t prompt to create all blueprints')
-def create_all_blueprints(obj, no_prompt):
+@click.confirmation_option('-y', '--yes', prompt='Really create all blueprints?')
+def create_all_blueprints(obj):
     """
     Create all the blueprints in the map file
     """
     client = obj['client']
-
-    if no_prompt:
-        really = raw_input('Really create all blueprints (y/n)? ')
-        if really not in ['Y', 'y']:
-            return
 
     blueprint_dir = os.path.expanduser(client.config['blueprint_dir'])
     mapping = yaml.safe_load(open(os.path.join(blueprint_dir, 'mappings.yaml'), 'r'))
@@ -192,14 +179,14 @@ def create_all_blueprints(obj, no_prompt):
 
 
 def _get_blueprint_id(client, blueprint_title):
-    blueprints = client.search_blueprints(title=blueprint_title)
+    found_blueprints = client.search_blueprints(title=blueprint_title)
 
-    if len(blueprints) == 0:
-        raise click.UsageError('Blueprint [{0}] does not exist'.format(blueprint_title))
-    elif len(blueprints) > 1:
-        raise click.UsageError('Blueprint [{0}] does not exist'.format(blueprint_title))
+    if len(found_blueprints) == 0:
+        raise click.Abort('Blueprint "{0}" does not exist'.format(blueprint_title))
+    elif len(found_blueprints) > 1:
+        raise click.Abort('Multiple blueprints matching "{0}" were found'.format(blueprint_title))
     else:
-        return blueprints[0]['id']
+        return found_blueprints[0]['id']
 
 
 @blueprints.command(name='delete')
@@ -213,10 +200,7 @@ def delete_blueprint(obj, title):
 
     blueprint_id = _get_blueprint_id(client, title)
 
-    really = raw_input('Really delete blueprint {0} (y/n)? '.format(title))
-    if really not in ['y', 'Y']:
-        click.echo('Aborting deletion')
-        return
+    click.confirm('Really delete blueprint {0}?'.format(title), abort=True)
 
     click.echo('Deleting {0}'.format(title))
     client.delete_blueprint(blueprint_id)
