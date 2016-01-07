@@ -2,9 +2,84 @@ from __future__ import print_function
 
 import json
 
+import click
 from cmd2 import Cmd
 
+from stackdio.cli.mixins.blueprints import get_blueprint_id
+from stackdio.cli.utils import print_summary
 from stackdio.client.exceptions import StackException
+
+
+@click.group()
+def stacks():
+    """
+    Perform actions on stacks
+    """
+    pass
+
+
+@stacks.command(name='list')
+@click.pass_obj
+def list_stacks(obj):
+    """
+    List all stacks
+    """
+    client = obj['client']
+
+    click.echo('Getting stacks ... ')
+    print_summary('Stack', client.list_stacks())
+
+
+@stacks.command(name='launch')
+@click.pass_obj
+@click.argument('blueprint_title')
+@click.argument('stack_title')
+def launch_stack(obj, blueprint_title, stack_title):
+        """
+        Launch a stack from a blueprint
+        """
+        client = obj['client']
+
+        blueprint_id = get_blueprint_id(client, blueprint_title)
+
+        click.echo('Launching stack "{0}" from blueprint "{1}"'.format(stack_title,
+                                                                       blueprint_title))
+
+        stack_data = {
+            'blueprint': blueprint_id,
+            'title': stack_title,
+            'description': 'Launched from blueprint %s' % (blueprint_title),
+            'namespace': stack_title,
+        }
+        results = client.create_stack(stack_data)
+        click.echo('Stack launch results:\n{0}'.format(results))
+
+
+def get_stack_id(client, stack_title):
+    found_stacks = client.search_stacks(title=stack_title)
+
+    if len(found_stacks) == 0:
+        raise click.Abort('Stack "{0}" does not exist'.format(stack_title))
+    elif len(found_stacks) > 1:
+        raise click.Abort('Multiple stacks matching "{0}" were found'.format(stack_title))
+    else:
+        return found_stacks[0]['id']
+
+
+@stacks.command(name='history')
+@click.pass_obj
+@click.argument('stack_title')
+@click.option('-l', '--length', type=click.INT, default=20, help='The number of entries to show')
+def stack_history(obj, stack_title, length):
+    """
+    Print recent history for a stack
+    """
+    client = obj['client']
+
+    stack_id = get_stack_id(client, stack_title)
+    history = client.get_stack_history(stack_id)
+    for event in history[0:min(length, len(history))]:
+        click.echo('[{created}] {level} // {event} // {status}'.format(**event))
 
 
 class StackMixin(Cmd):
@@ -57,67 +132,6 @@ class StackMixin(Cmd):
         else:
             print(USAGE)
 
-    def complete_stacks(self, text, line, begidx, endidx):
-        # not using line, begidx, or endidx, thus the following pylint disable
-        # pylint: disable=W0613
-        return [i for i in self.STACK_COMMANDS if i.startswith(text)]
-
-    def help_stacks(self):
-        print("Manage stacks.")
-        print("Sub-commands can be one of:\n\t{0}".format(
-            ", ".join(self.STACK_COMMANDS)))
-        print("Try 'stacks COMMAND' to get help on (most) sub-commands")
-
-    def _list_stacks(self):
-        """List all running stacks"""
-
-        print("Getting running stacks ... ")
-        stacks = self.stacks.list_stacks()
-        self._print_summary("Stack", stacks)
-
-    def _launch_stack(self, args):
-        """Launch a stack from a blueprint.
-        Must provide blueprint name and stack name"""
-
-        if len(args) != 2:
-            print("Usage: stacks launch BLUEPRINT_NAME STACK_NAME")
-            return
-
-        blueprint_name = args[0]
-        stack_name = args[1]
-
-        try:
-            blueprint_id = self.stacks.get_blueprint_id(blueprint_name)
-        except StackException:
-            print(self.colorize(
-                "Blueprint [{0}] does not exist".format(blueprint_name),
-                "red"))
-            return
-
-        print("Launching stack [{0}] from blueprint [{1}]".format(
-            stack_name, blueprint_name))
-
-        stack_data = {
-            "blueprint": blueprint_id,
-            "title": stack_name,
-            "description": "Launched from blueprint %s" % (blueprint_name),
-            "namespace": stack_name,
-            "max_retries": 1,
-        }
-        results = self.stacks.create_stack(stack_data)
-        print("Stack launch results:\n{0}".format(results))
-
-    def _get_stack_id(self, stack_name):
-        """Validate that a stack exists"""
-
-        try:
-            return self.stacks.get_stack_id(stack_name)
-        except StackException:
-            print(self.colorize(
-                "Stack [{0}] does not exist".format(stack_name),
-                "red"))
-            raise
-
     def _stack_action(self, args):
         """Perform an action on a stack."""
 
@@ -164,19 +178,6 @@ class StackMixin(Cmd):
         else:
             results = self.stacks.do_stack_action(stack_id, action)
         print("Stack action results:\n{0}".format(json.dumps(results, indent=3)))
-
-    def _stack_history(self, args):
-        """Print recent history for a stack"""
-
-        NUM_EVENTS = 20
-        if len(args) < 1:
-            print("Usage: stacks history STACK_NAME")
-            return
-
-        stack_id = self._get_stack_id(args[0])
-        history = self.stacks.get_stack_history(stack_id).get("results")
-        for event in history[0:min(NUM_EVENTS, len(history))]:
-            print("[{created}] {level} // {event} // {status}".format(**event))
 
     def _stack_hostnames(self, args):
         """Print hostnames for a stack"""

@@ -178,7 +178,7 @@ def create_all_blueprints(obj):
             click.secho('Blueprint {0} NOT created\n'.format(name), fg='magenta')
 
 
-def _get_blueprint_id(client, blueprint_title):
+def get_blueprint_id(client, blueprint_title):
     found_blueprints = client.search_blueprints(title=blueprint_title)
 
     if len(found_blueprints) == 0:
@@ -198,7 +198,7 @@ def delete_blueprint(obj, title):
     """
     client = obj['client']
 
-    blueprint_id = _get_blueprint_id(client, title)
+    blueprint_id = get_blueprint_id(client, title)
 
     click.confirm('Really delete blueprint {0}?'.format(title), abort=True)
 
