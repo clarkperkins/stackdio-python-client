@@ -82,7 +82,12 @@ class StackMixin(HttpMixin):
         """Get a list of all stack hosts"""
         pass
 
-    @get('stacks/{stack_id}/logs/{log_type}.{level}.{date}', jsonify=False)
+    @get('stacks/{stack_id}/logs/')
+    def list_stack_logs(self, stack_id):
+        """Get a list of stack logs"""
+        pass
+
+    @get('stacks/{stack_id}/logs/{log_type}.{level}.{date}?tail={tail}', jsonify=False)
     def get_logs(self, stack_id, log_type, level='log', date='latest', tail=None):
         """Get logs for a stack"""
 

@@ -294,5 +294,5 @@ class BlueprintGenerator(object):
             ))
         except UndefinedError as e:
             self.error_exit('Missing variable: {0}'.format(str(e)))
-        except ValueError:
-            self.error_exit('Invalid JSON.  Check your template file.')
+        # except ValueError:
+        #     self.error_exit('Invalid JSON.  Check your template file.')

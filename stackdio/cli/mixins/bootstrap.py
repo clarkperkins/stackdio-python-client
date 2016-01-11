@@ -264,6 +264,7 @@ class BootstrapMixin(Cmd):
     def _bootstrap_formulas(self):
         """Import and wait for formulas to become ready"""
 
+        @poll_and_wait
         def _check_formulas():
             formulas = self.stacks.list_formulas()
             for formula in formulas:
@@ -282,7 +283,7 @@ class BootstrapMixin(Cmd):
         sys.stdout.write("Waiting for formulas .")
         sys.stdout.flush()
         try:
-            poll_and_wait(_check_formulas)
+            _check_formulas()
             sys.stdout.write(" done!\n")
         except TimeoutException:
             print(self.colorize(

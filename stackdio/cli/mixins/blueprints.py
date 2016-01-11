@@ -95,7 +95,7 @@ def _create_single_blueprint(config, template_file, var_files, no_prompt):
     for var_file in var_files:
         var_file = os.path.join(blueprint_dir, 'var_files', var_file)
         if os.path.exists(var_file):
-            final_var_files.append(var_file)
+            final_var_files.append(open(var_file, 'r'))
         else:
             click.secho('WARNING: Variable file {0} was not found.  Ignoring.'.format(var_file),
                         fg='magenta')

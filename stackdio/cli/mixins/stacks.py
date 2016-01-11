@@ -1,13 +1,14 @@
 from __future__ import print_function
 
-import json
-
 import click
 from cmd2 import Cmd
 
 from stackdio.cli.mixins.blueprints import get_blueprint_id
 from stackdio.cli.utils import print_summary
 from stackdio.client.exceptions import StackException
+
+
+REQUIRE_ACTION_CONFIRMATION = ['terminate']
 
 
 @click.group()
@@ -35,24 +36,24 @@ def list_stacks(obj):
 @click.argument('blueprint_title')
 @click.argument('stack_title')
 def launch_stack(obj, blueprint_title, stack_title):
-        """
-        Launch a stack from a blueprint
-        """
-        client = obj['client']
+    """
+    Launch a stack from a blueprint
+    """
+    client = obj['client']
 
-        blueprint_id = get_blueprint_id(client, blueprint_title)
+    blueprint_id = get_blueprint_id(client, blueprint_title)
 
-        click.echo('Launching stack "{0}" from blueprint "{1}"'.format(stack_title,
-                                                                       blueprint_title))
+    click.echo('Launching stack "{0}" from blueprint "{1}"'.format(stack_title,
+                                                                   blueprint_title))
 
-        stack_data = {
-            'blueprint': blueprint_id,
-            'title': stack_title,
-            'description': 'Launched from blueprint %s' % (blueprint_title),
-            'namespace': stack_title,
-        }
-        results = client.create_stack(stack_data)
-        click.echo('Stack launch results:\n{0}'.format(results))
+    stack_data = {
+        'blueprint': blueprint_id,
+        'title': stack_title,
+        'description': 'Launched from blueprint %s' % (blueprint_title),
+        'namespace': stack_title,
+    }
+    results = client.create_stack(stack_data)
+    click.echo('Stack launch results:\n{0}'.format(results))
 
 
 def get_stack_id(client, stack_title):
@@ -82,167 +83,141 @@ def stack_history(obj, stack_title, length):
         click.echo('[{created}] {level} // {event} // {status}'.format(**event))
 
 
-class StackMixin(Cmd):
+@stacks.command(name='hostnames')
+@click.pass_obj
+@click.argument('stack_title')
+def stack_hostnames(obj, stack_title):
+    """
+    Print hostnames for a stack
+    """
+    client = obj['client']
 
-    STACK_ACTIONS = ["start", "stop", "launch_existing", "terminate", "provision", "custom"]
-    STACK_COMMANDS = ["list", "launch_from_blueprint", "history", "hostnames",
-        "delete", "logs", "access_rules"] + STACK_ACTIONS
+    stack_id = get_stack_id(client, stack_title)
+    hosts = client.get_stack_hosts(stack_id)
 
-    VALID_LOGS = {
-        "provisioning": "provisioning.log",
-        "provisioning-error": "provisioning.err",
-        "global-orchestration": "global_orchestration.log",
-        "global-orchestration-error": "global_orchestration.err",
-        "orchestration": "orchestration.log",
-        "orchestration-error": "orchestration.err",
-        "launch": "launch.log",
-    }
+    click.echo('Hostnames:')
+    for host in hosts:
+        click.echo('  - {0} ({1})'.format(host['fqdn'], host['state']))
 
-    def do_stacks(self, arg):
-        """Entry point to controlling."""
 
-        USAGE = "Usage: stacks COMMAND\nWhere COMMAND is one of: %s" % (
-            ", ".join(self.STACK_COMMANDS))
+@stacks.command(name='delete')
+@click.pass_obj
+@click.argument('stack_title')
+def delete_stack(obj, stack_title):
+    """
+    Delete a stack.  PERMANENT AND DESTRUCTIVE!!!
+    """
+    client = obj['client']
 
-        # We don't want multiline commands, so include anything after a terminator as well
-        args = arg.parsed.raw.split()[1:]
-        if not args or args[0] not in self.STACK_COMMANDS:
-            print(USAGE)
-            return
+    stack_id = get_stack_id(client, stack_title)
 
-        stack_cmd = args[0]
+    click.confirm('Really delete stack {0}?'.format(stack_title), abort=True)
 
-        if stack_cmd == "list":
-            self._list_stacks()
-        elif stack_cmd == "launch_from_blueprint":
-            self._launch_stack(args[1:])
-        elif stack_cmd == "history":
-            self._stack_history(args[1:])
-        elif stack_cmd == "hostnames":
-            self._stack_hostnames(args[1:])
-        elif stack_cmd == "delete":
-            self._stack_delete(args[1:])
-        elif stack_cmd == "logs":
-            self._stack_logs(args[1:])
-        elif stack_cmd == "access_rules":
-            self._stack_access_rules(args[1:])
-        elif stack_cmd in self.STACK_ACTIONS:
-            self._stack_action(args)
+    results = client.delete_stack(stack_id)
+    click.echo('Delete stack results: \n{0}'.format(results))
+    click.secho('Run "stacks history {0}" to monitor status of the deletion'.format(stack_title),
+                fg='green')
 
-        else:
-            print(USAGE)
 
-    def _stack_action(self, args):
-        """Perform an action on a stack."""
+@stacks.command(name='action')
+@click.pass_obj
+@click.argument('stack_title')
+@click.argument('action')
+def perform_action(obj, stack_title, action):
+    """
+    Perform an action on a stack
+    """
+    client = obj['client']
 
-        if len(args) == 1:
-            print("Usage: stacks {0} STACK_NAME".format(args[0]))
-            return
-        elif args[0] != "custom" and len(args) != 2:
-            print("Usage: stacks ACTION STACK_NAME")
-            print("Where ACTION is one of {0}".format(
-                ", ".join(self.STACK_ACTIONS)))
-            return
-        elif args[0] == "custom" and len(args) < 4:
-            print("Usage: stacks custom STACK_NAME HOST_TARGET COMMAND")
-            print("Where command can be arbitrarily long with spaces")
-            return
+    stack_id = get_stack_id(client, stack_title)
 
-        if args[0] not in self.STACK_ACTIONS:
-            print(self.colorize(
-                "Invalid action - must be one of {0}".format(self.STACK_ACTIONS),
-                "red"))
-            return
+    # Prompt for confirmation if need be
+    if action in REQUIRE_ACTION_CONFIRMATION:
+        click.confirm('Really {0} stack {1}?'.format(action, stack_title), abort=True)
 
-        action = "launch" if args[0] == "launch_existing" else args[0]
-        stack_name = args[1]
+    try:
+        client.do_stack_action(stack_id, action)
+    except StackException as e:
+        raise click.UsageError(e.message)
 
-        if action == "terminate":
-            really = raw_input("Really terminate stack {0} (y/n)? ".format(args[0]))
-            if really not in ["y", "Y"]:
-                print("Aborting termination")
-                return
 
-        if action == "custom":
-            host_target = args[2]
-            command = ''
-            for token in args[3:]:
-                command += token + ' '
+@stacks.command(name='run')
+@click.pass_obj
+@click.argument('stack_title')
+@click.argument('command')
+@click.option('-w', '--wait', is_flag=True, help='Wait for the command to finish running')
+def run_command(obj, stack_title, command, wait):
+    """
+    Run a command on all hosts in the stack
+    """
+    pass
 
-        stack_id = self._get_stack_id(stack_name)
-        print("Performing [{0}] on [{1}]".format(
-            action, stack_name))
 
-        if action == "custom":
-            results = self.stacks.do_stack_action(stack_id, "custom", host_target, command)
-        else:
-            results = self.stacks.do_stack_action(stack_id, action)
-        print("Stack action results:\n{0}".format(json.dumps(results, indent=3)))
+def print_logs(client, stack_id):
+    logs = client.list_stack_logs(stack_id)
 
-    def _stack_hostnames(self, args):
-        """Print hostnames for a stack"""
+    click.echo('Latest:')
+    for log in logs['latest']:
+        click.echo('  {0}'.format(log.split('/')[-1]))
 
-        if len(args) < 1:
-            print("Usage: stacks hostnames STACK_NAME")
-            return
+    click.echo()
 
-        stack_id = self._get_stack_id(args[0])
+    click.echo('Historical:')
+    for log in logs['historical']:
+        click.echo('  {0}'.format(log.split('/')[-1]))
+
+
+@stacks.command(name='list-logs')
+@click.pass_obj
+@click.argument('stack_title')
+def list_stack_logs(obj, stack_title):
+    """
+    Get a list of stack logs
+    """
+    client = obj['client']
+
+    stack_id = get_stack_id(client, stack_title)
+
+    print_logs(client, stack_id)
+
+
+@stacks.command(name='logs')
+@click.pass_obj
+@click.argument('stack_title')
+@click.argument('log_type')
+@click.option('-l', '--lines', type=click.INT, default=25, help='number of lines to tail')
+def stack_logs(obj, stack_title, log_type, lines):
+    """
+    Get logs for a stack
+    """
+    client = obj['client']
+
+    stack_id = get_stack_id(client, stack_title)
+
+    split_arg = log_type.split('.')
+
+    valid_log = True
+
+    if len(split_arg) != 3:
+        valid_log = False
+
+    if valid_log:
         try:
-            fqdns = self.stacks.describe_hosts(stack_id)
+            log_text = client.get_logs(stack_id, log_type=split_arg[0], level=split_arg[1],
+                                       date=split_arg[2], tail=lines)
+            click.echo(log_text)
         except StackException:
-            print(self.colorize(
-                "Hostnames not available - stack still launching?", "red"))
-            raise
+            valid_log = True
 
-        print("Hostnames:")
-        for host in fqdns:
-            print("  - {0}".format(host))
+    if not valid_log:
+        click.echo('Please use one of these logs:\n')
 
-    def _stack_delete(self, args):
-        """Delete a stack.  PERMANENT AND DESTRUCTIVE!!!"""
+        print_logs(client, stack_id)
 
-        if len(args) < 1:
-            print("Usage: stacks delete STACK_NAME")
-            return
+        raise click.UsageError('Invalid log')
 
-        stack_id = self._get_stack_id(args[0])
-        really = raw_input("Really delete stack {0} (y/n)? ".format(args[0]))
-        if really not in ["y", "Y"]:
-            print("Aborting deletion")
-            return
 
-        results = self.stacks.delete_stack(stack_id)
-        print("Delete stack results: {0}".format(results))
-        print(self.colorize(
-            "Run 'stacks history {0}' to monitor status of the deletion".format(
-            args[0]),
-            "green"))
-
-    def _stack_logs(self, args):
-        """Get logs for a stack"""
-
-        MAX_LINES = 25
-
-        if len(args) < 2:
-            print("Usage: stacks logs STACK_NAME LOG_TYPE [LOG_LENGTH]")
-            print("LOG_TYPE is one of {0}".format(
-                ", ".join(self.stacks.VALID_LOGS.keys())))
-            print("This defaults to the last {0} lines of the log.".
-                format(MAX_LINES))
-            return
-
-        if len(args) >= 3:
-            max_lines = args[2]
-        else:
-            max_lines = MAX_LINES
-
-        stack_id = self.stacks.get_stack_id(args[0])
-
-        split_arg = self.VALID_LOGS[args[1]].split('.')
-
-        log_text = self.stacks.get_logs(stack_id, log_type=split_arg[0], level=split_arg[1],
-                                        tail=max_lines)
-        print(log_text)
+class StackMixin(Cmd):
 
     def _stack_access_rules(self, args):
         """Get access rules for a stack"""
