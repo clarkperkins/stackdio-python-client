@@ -52,6 +52,7 @@ def server_version(obj):
 # Add all our other commands
 stackdio.add_command(blueprints.blueprints)
 stackdio.add_command(stacks.stacks)
+stackdio.add_command(formulas.formulas)
 
 
 def main():
