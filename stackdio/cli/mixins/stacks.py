@@ -1,9 +1,9 @@
 from __future__ import print_function
 
 import click
-from cmd2 import Cmd
 
 from stackdio.cli.mixins.blueprints import get_blueprint_id
+from stackdio.cli.polling import poll_and_wait
 from stackdio.cli.utils import print_summary
 from stackdio.client.exceptions import StackException
 
@@ -141,16 +141,75 @@ def perform_action(obj, stack_title, action):
         raise click.UsageError(e.message)
 
 
+def print_command_output(json_blob):
+    for host in sorted(json_blob['std_out'], key=lambda x: x['host']):
+        click.secho('{0}:'.format(host['host']), fg='green')
+        click.echo(host['output'])
+        click.echo()
+
+
 @stacks.command(name='run')
-@click.pass_obj
+@click.pass_context
 @click.argument('stack_title')
+@click.argument('host_target')
 @click.argument('command')
-@click.option('-w', '--wait', is_flag=True, help='Wait for the command to finish running')
-def run_command(obj, stack_title, command, wait):
+@click.option('-w', '--wait', is_flag=True, default=False,
+              help='Wait for the command to finish running')
+@click.option('-t', '--timeout', type=click.INT, default=120,
+              help='The amount of time to wait for the command in seconds.  '
+                   'Ignored if used without the -w option.')
+def run_command(ctx, stack_title, host_target, command, wait, timeout):
     """
     Run a command on all hosts in the stack
     """
-    pass
+    client = ctx.obj['client']
+
+    stack_id = get_stack_id(client, stack_title)
+
+    resp = client.run_command(stack_id, host_target, command)
+
+    if not wait:
+        # Grab the parent info name
+        name = ctx.parent.parent.info_name
+
+        click.echo('Command "{0}" running on "{1}" hosts.  '
+                   'Check the status by running:'.format(command, host_target))
+        click.echo()
+        click.secho('   {0} stacks command-output {1}'.format(name, resp['id']), fg='yellow')
+        click.echo()
+        return
+
+    @poll_and_wait
+    def check_status():
+        command_out = client.get_command(resp['id'])
+
+        if command_out['status'] != 'finished':
+            return False
+
+        click.echo()
+        print_command_output(command_out)
+
+        return True
+
+    check_status(max_time=timeout)
+
+
+@stacks.command(name='command-output')
+@click.pass_obj
+@click.argument('command_id')
+def get_command_output(obj, command_id):
+    """
+    Get the status and output of a command
+    """
+    client = obj['client']
+
+    resp = client.get_command(command_id)
+
+    if resp['status'] != 'finished':
+        click.secho('Status: {0}'.format(resp['status']), fg='yellow')
+        return
+
+    print_command_output(resp)
 
 
 def print_logs(client, stack_id):
@@ -215,95 +274,3 @@ def stack_logs(obj, stack_title, log_type, lines):
         print_logs(client, stack_id)
 
         raise click.UsageError('Invalid log')
-
-
-class StackMixin(Cmd):
-
-    def _stack_access_rules(self, args):
-        """Get access rules for a stack"""
-
-        COMMANDS = ["list", "add", "delete"]
-
-        if len(args) < 2 or args[0] not in COMMANDS:
-            print("Usage: stacks access_rules COMMAND STACK_NAME")
-            print("Where COMMAND is one of: %s" % (", ".join(COMMANDS)))
-            return
-
-        if args[0] == "list":
-            stack_id = self.stacks.get_stack_id(args[1])
-            groups = self.stacks.list_access_rules(stack_id)
-            print("## {0} Access Groups".format(len(groups)))
-            for group in groups:
-                print("- Name: {0}".format(group['blueprint_host_definition']['title']))
-                print("  Description: {0}".format(group['blueprint_host_definition']['description']))
-                print("  Rules:")
-                for rule in group['rules']:
-                    print("    {0}".format(rule['protocol']), end='')
-                    if rule['from_port'] == rule['to_port']:
-                        print("port {0} allows".format(rule['from_port']), end='')
-                    else:
-                        print("ports {0}-{1} allow".format(rule['from_port'],
-                                                           rule['to_port']), end='')
-                    print(rule['rule'])
-                print('')
-            return
-
-        elif args[0] == "add":
-            if len(args) < 3:
-                print("Usage: stacks access_rules add STACK_NAME GROUP_NAME")
-                return
-
-            stack_id = self.stacks.get_stack_id(args[1])
-            group_id = self.stacks.get_access_rule_id(stack_id, args[2])
-
-            protocol = raw_input("Protocol (tcp, udp, or icmp): ")
-            from_port = raw_input("From port: ")
-            to_port = raw_input("To port: ")
-            rule = raw_input("Rule (IP address or group name): ")
-
-            data = {
-                "action": "authorize",
-                "protocol": protocol,
-                "from_port": from_port,
-                "to_port": to_port,
-                "rule": rule
-            }
-
-            self.stacks.edit_access_rule(group_id, data)
-
-        elif args[0] == "delete":
-            if len(args) < 3:
-                print("Usage: stacks access_rules delete STACK_NAME GROUP_NAME")
-                return
-
-            stack_id = self.stacks.get_stack_id(args[1])
-            group_id = self.stacks.get_access_rule_id(stack_id, args[2])
-
-            index = 0
-
-            rules = self.stacks.list_rules_for_group(group_id)
-
-            print('')
-            for rule in rules:
-                print("{0}) {1}".format(index, rule['protocol']), end='')
-                if rule['from_port'] == rule['to_port']:
-                    print("port {0} allows".format(rule['from_port']), end='')
-                else:
-                    print("ports {0}-{1} allow".format(rule['from_port'], rule['to_port']), end='')
-                print(rule['rule'])
-                index += 1
-            print('')
-            delete_index = int(raw_input("Enter the index of the rule to delete: "))
-
-            data = rules[delete_index]
-            data['from_port'] = int(data['from_port'])
-            data['to_port'] = int(data['to_port'])
-            data['action'] = "revoke"
-
-            self.stacks.edit_access_rule(group_id, data)
-
-        print('')
-
-        args[0] = "list"
-
-        self._stack_access_rules(args)

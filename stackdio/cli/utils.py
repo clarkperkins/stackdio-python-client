@@ -33,6 +33,9 @@ def print_summary(title, components):
         if 'description' in item:
             click.echo('  Description: {0}'.format(item['description']))
 
+        if 'status' in item:
+            click.echo('  Status: {0}'.format(item['status']))
+
         if 'status_detail' in item:
             click.echo('  Status Detail: {0}'.format(item['status_detail']))
 

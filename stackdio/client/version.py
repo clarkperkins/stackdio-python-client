@@ -66,6 +66,8 @@ def _parse_version_string(version_string):
 
     # String trailing info
     version_string = re.split("[a-zA-Z]", version_string)[0]
+    if version_string[-1] == '.':
+        version_string = version_string[:-1]
     version = version_string.split(".")
 
     # Pad length to 3

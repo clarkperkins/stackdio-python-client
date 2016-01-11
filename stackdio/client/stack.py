@@ -72,6 +72,30 @@ class StackMixin(HttpMixin):
 
         return {'action': action}
 
+    @post('stacks/{stack_id}/commands/')
+    def run_command(self, stack_id, host_target, command):
+        """
+        Run a command on all stacks
+        """
+        return {
+            'host_target': host_target,
+            'command': command,
+        }
+
+    @get('stacks/{stack_id}/commands/')
+    def get_stack_commands(self, stack_id):
+        """
+        Get all commands for a stack
+        """
+        pass
+
+    @get('commands/{command_id}/')
+    def get_command(self, command_id):
+        """
+        Get information about a command
+        """
+        pass
+
     @get('stacks/{stack_id}/history/', paginate=True)
     def get_stack_history(self, stack_id):
         """Get stack info"""
