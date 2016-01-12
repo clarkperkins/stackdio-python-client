@@ -26,23 +26,8 @@ class TimeoutException(Exception):
     pass
 
 
+# Create our decorator
 pass_client = click.make_pass_decorator(StackdioClient)
-
-
-# def pass_client(f):
-#     def new_func(*args, **kwargs):
-#         obj = click.get_current_context().obj
-#
-#         if not isinstance(obj, dict):
-#             raise click.Abort('obj is not an instance of `dict`')
-#
-#         client = obj.get('client')
-#
-#         if not client or not isinstance(client, StackdioClient):
-#             raise click.Abort('No StackdioClient available')
-#
-#         return f(client, *args, **kwargs)
-#     return update_wrapper(new_func, f)
 
 
 def print_summary(title, components):

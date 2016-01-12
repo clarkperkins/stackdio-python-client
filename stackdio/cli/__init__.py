@@ -21,25 +21,28 @@ HIST_FILE = os.path.join(os.path.expanduser('~'), '.stackdio-cli', 'history')
 @click.version_option(__version__, '-v', '--version')
 @click.pass_context
 def stackdio(ctx):
+    # Create a client instance
     client = StackdioClient()
+
+    # Throw an error if we're not configured already
     if ctx.invoked_subcommand not in ('configure', None) and not client.usable():
         raise click.UsageError('It looks like you haven\'t used this CLI before.  Please run '
                                '`stackdio-cli configure`')
 
-    # Put the client in the obj
+    # Put the client in the obj so other commands can pick it up
     ctx.obj = client
 
 
-@stackdio.command()
+@stackdio.command(name='configure')
 @pass_client
 def configure(client):
     """
     Configure the client
     """
-    click.echo('configuring')
+    client.config.prompt_for_config()
 
 
-@stackdio.command('server-version')
+@stackdio.command(name='server-version')
 @pass_client
 def server_version(client):
     """

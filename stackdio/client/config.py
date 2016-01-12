@@ -29,6 +29,12 @@ CFG_DIR = os.path.join(os.path.expanduser('~'), '.stackdio')
 CFG_FILE = os.path.join(CFG_DIR, 'client.cfg')
 
 
+class UserPath(click.Path):
+
+    def convert(self, value, param, ctx):
+        return super(UserPath, self).convert(os.path.expanduser(value), param, ctx)
+
+
 class StackdioConfig(object):
     """
     A wrapper around python's ConfigParser class
@@ -57,20 +63,25 @@ class StackdioConfig(object):
         else:
             self._config.read(config_file)
 
-            username = self.get('username')
-
-            if username is not None:
-                self['password'] = keyring.get_password(self.KEYRING_SERVICE, username)
-
-            # Make the blueprint dir usable
-            blueprint_dir = self.get('blueprint_dir')
-            if blueprint_dir:
-                new_blueprint_dir = os.path.expanduser(blueprint_dir)
-                self._config.set(section, 'blueprint_dir', new_blueprint_dir)
-
     def save(self):
         with open(self._cfg_file, 'w') as f:
             self._config.write(f)
+
+    def get_password(self, username=None):
+        username = username or self.get('username')
+
+        if username is not None:
+            return keyring.get_password(self.KEYRING_SERVICE, username)
+        else:
+            return None
+
+    def set_password(self, new_password):
+        username = self.get('username')
+
+        if username is None:
+            raise KeyError('Not username provided')
+
+        keyring.set_password(self.KEYRING_SERVICE, username, new_password)
 
     def __contains__(self, item):
         try:
@@ -105,6 +116,11 @@ class StackdioConfig(object):
 
     def prompt_for_config(self):
         self.get_url()
+        self.get_username()
+        self.get_blueprint_dir()
+
+        # Save when we're done
+        self.save()
 
     def _test_url(self, url):
         try:
@@ -116,24 +132,27 @@ class StackdioConfig(object):
             click.echo('You might have forgotten http:// or https://')
             return False
 
-    def get_url(self):
+    def _test_credentials(self, username, password):
+        try:
+            r = requests.get(self['url'],
+                             verify=self.get('verify', True),
+                             auth=(username, password))
+            return 200 <= r.status_code < 300
+        except (ConnectionError, MissingSchema):
+            click.echo('There is something wrong with your URL.')
+            return False
 
+    def get_url(self):
         if self.get('url') is not None:
-            val = click.prompt('Keep existing url', default='y', prompt_suffix=' (y|n)? ')
-            if val not in ('N', 'n'):
+            if click.confirm('Keep existing url ({0})?'.format(self['url']), default=True):
                 return
 
-        val = click.prompt('Does your stackd.io server have a self-signed SSL certificate',
-                           default='n', prompt_suffix=' (y|n)? ')
+        self['verify'] = not click.confirm('Does your stackd.io server have a self-signed '
+                                           'SSL certificate?')
 
-        if val in ('Y', 'y'):
-            self['verify'] = False
-        else:
-            self['verify'] = True
+        new_url = None
 
-        self['url'] = None
-
-        while self['url'] is None:
+        while new_url is None:
             url = click.prompt('What is the URL of your stackd.io server', prompt_suffix='? ')
             if url.endswith('api'):
                 url += '/'
@@ -144,7 +163,58 @@ class StackdioConfig(object):
             else:
                 url += '/api/'
             if self._test_url(url):
-                self['url'] = url
+                new_url = url
             else:
                 click.echo('There was an error while attempting to contact that server.  '
                            'Try again.')
+
+        self['url'] = new_url
+
+    def get_username(self):
+        valid_creds = False
+
+        while not valid_creds:
+            keep_username = False
+
+            username = self.get('username')
+
+            if username is not None:
+                if click.confirm('Keep existing username ({0})?'.format(username), default=True):
+                    keep_username = True
+
+            if not keep_username:
+                username = click.prompt('What is your stackd.io username', prompt_suffix='? ')
+
+            password = self.get_password(username)
+
+            keep_password = False
+
+            if password is not None:
+                if click.confirm('Keep existing password for user {0}?'.format(username),
+                                 default=True):
+                    keep_password = True
+
+            if not keep_password:
+                password = click.prompt('What is the password for {0}'.format(username),
+                                        prompt_suffix='? ', hide_input=True)
+
+            if self._test_credentials(username, password):
+                self['username'] = username
+                self.set_password(password)
+                valid_creds = True
+            else:
+                click.echo('Invalid credentials.  Please try again.')
+                valid_creds = False
+
+    def get_blueprint_dir(self):
+        blueprints = self.get('blueprint_dir')
+
+        if blueprints is not None:
+            if click.confirm('Keep existing blueprints directory ({0})?'.format(blueprints),
+                             default=True):
+                return
+
+        self['blueprint_dir'] = click.prompt('Where are your blueprints stored',
+                                             prompt_suffix='? ',
+                                             type=UserPath(exists=True, file_okay=False,
+                                                           resolve_path=True))

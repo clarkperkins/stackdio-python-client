@@ -51,10 +51,10 @@ class StackdioClient(BlueprintMixin, FormulaMixin, AccountMixin, ImageMixin,
 
         if self.config.usable_config:
             # Grab stuff from the config
-            self.url = self.config['url']
-            self.username = self.config['username']
-            self.password = self.config['password']
-            self.verify = self.config['verify']
+            self.url = self.config.get('url')
+            self.username = self.config.get('username')
+            self.password = self.config.get_password()
+            self.verify = self.config.get('verify', True)
 
         if url is not None:
             self.url = url
@@ -66,20 +66,22 @@ class StackdioClient(BlueprintMixin, FormulaMixin, AccountMixin, ImageMixin,
         if verify is not None:
             self.verify = verify
 
-        super(StackdioClient, self).__init__(url=self.url, auth=(self.username, self.password),
+        super(StackdioClient, self).__init__(url=self.url,
+                                             auth=(self.username, self.password),
                                              verify=self.verify)
 
-        try:
-            _, self.version = _parse_version_string(self.get_version())
-        except MissingUrlException:
-            self.version = None
+        if self.usable():
+            try:
+                _, self.version = _parse_version_string(self.get_version(raise_for_status=False))
+            except MissingUrlException:
+                self.version = None
 
-        if self.version and (self.version[0] != 0 or self.version[1] != 7):
-            raise IncompatibleVersionException('Server version {0}.{1}.{2} not '
-                                               'supported.'.format(**self.version))
+            if self.version and (self.version[0] != 0 or self.version[1] != 7):
+                raise IncompatibleVersionException('Server version {0}.{1}.{2} not '
+                                                   'supported.'.format(**self.version))
 
     def usable(self):
-        return self.config.usable_config or self.url
+        return self.url and self.username and self.password
 
     @get('')
     def get_root(self):
