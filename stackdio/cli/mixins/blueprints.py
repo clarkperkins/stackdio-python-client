@@ -6,7 +6,7 @@ import click
 import yaml
 
 from stackdio.cli.blueprints.generator import BlueprintGenerator, BlueprintException
-from stackdio.cli.utils import print_summary
+from stackdio.cli.utils import print_summary, pass_client
 
 
 class BlueprintNotFound(Exception):
@@ -22,13 +22,11 @@ def blueprints():
 
 
 @blueprints.command(name='list')
-@click.pass_obj
-def list_blueprints(obj):
+@pass_client
+def list_blueprints(client):
     """
     List all blueprints
     """
-    client = obj['client']
-
     click.echo('Getting blueprints ... ')
     print_summary('Blueprint', client.list_blueprints())
 
@@ -45,13 +43,11 @@ def _recurse_dir(dirname, extensions, prefix=''):
 
 
 @blueprints.command(name='list-templates')
-@click.pass_obj
-def list_templates(obj):
+@pass_client
+def list_templates(client):
     """
     List all the blueprint templates
     """
-    client = obj['client']
-
     if 'blueprint_dir' not in client.config:
         click.echo('Missing blueprint directory config')
         return
@@ -107,7 +103,7 @@ def _create_single_blueprint(config, template_file, var_files, no_prompt):
 
 
 @blueprints.command(name='create')
-@click.pass_obj
+@pass_client
 @click.option('-m', '--mapping',
               help='The entry in the map file to use')
 @click.option('-t', '--template',
@@ -118,12 +114,10 @@ def _create_single_blueprint(config, template_file, var_files, no_prompt):
                    'var files will override those in var files to the left.')
 @click.option('-n', '--no-prompt', is_flag=True, default=True,
               help='Don\'t prompt for missing variables in the template')
-def create_blueprint(obj, mapping, template, var_file, no_prompt):
+def create_blueprint(client, mapping, template, var_file, no_prompt):
     """
     Create a blueprint
     """
-    client = obj['client']
-
     if not template and not mapping:
         raise click.UsageError('You must specify either a template or a mapping.')
 
@@ -157,14 +151,12 @@ def create_blueprint(obj, mapping, template, var_file, no_prompt):
 
 
 @blueprints.command(name='create-all')
-@click.pass_obj
+@pass_client
 @click.confirmation_option('-y', '--yes', prompt='Really create all blueprints?')
-def create_all_blueprints(obj):
+def create_all_blueprints(client):
     """
     Create all the blueprints in the map file
     """
-    client = obj['client']
-
     blueprint_dir = os.path.expanduser(client.config['blueprint_dir'])
     mapping = yaml.safe_load(open(os.path.join(blueprint_dir, 'mappings.yaml'), 'r'))
 
@@ -190,14 +182,12 @@ def get_blueprint_id(client, blueprint_title):
 
 
 @blueprints.command(name='delete')
-@click.pass_obj
+@pass_client
 @click.argument('title')
-def delete_blueprint(obj, title):
+def delete_blueprint(client, title):
     """
     Delete a blueprint
     """
-    client = obj['client']
-
     blueprint_id = get_blueprint_id(client, title)
 
     click.confirm('Really delete blueprint {0}?'.format(title), abort=True)
@@ -207,15 +197,13 @@ def delete_blueprint(obj, title):
 
 
 @blueprints.command(name='delete-all')
-@click.pass_obj
+@pass_client
 @click.confirmation_option('-y', '--yes', prompt='Really delete all blueprints?  This is '
                            'completely destructive, and you will never get them back.')
-def delete_all_blueprints(obj):
+def delete_all_blueprints(client):
     """
     Delete all blueprints
     """
-    client = obj['client']
-
     for blueprint in client.list_blueprints():
         client.delete_blueprint(blueprint['id'])
         click.secho('Deleted blueprint {0}'.format(blueprint['title']), fg='magenta')

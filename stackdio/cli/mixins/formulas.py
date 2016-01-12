@@ -2,7 +2,7 @@ from __future__ import print_function
 
 import click
 
-from stackdio.cli.utils import print_summary
+from stackdio.cli.utils import pass_client, print_summary
 
 
 @click.group()
@@ -14,8 +14,8 @@ def formulas():
 
 
 @formulas.command(name='list')
-@click.pass_obj
-def list_formulas(obj):
+@pass_client
+def list_formulas(client):
     """
     List all formulas
     """
@@ -26,12 +26,12 @@ def list_formulas(obj):
 
 
 @formulas.command(name='import')
-@click.pass_obj
+@pass_client
 @click.argument('uri')
 @click.option('-u', '--username', type=click.STRING, help='Git username')
 @click.option('-p', '--password', type=click.STRING, prompt=True, hide_input=True,
               help='Git password')
-def import_formula(obj, uri, username, password):
+def import_formula(client, uri, username, password):
     """
     Import a formula
     """
@@ -56,9 +56,9 @@ def get_formula_id(client, formula_uri):
 
 
 @formulas.command(name='delete')
-@click.pass_obj
+@pass_client
 @click.argument('uri')
-def delete_formula(obj, uri):
+def delete_formula(client, uri):
     """
     Delete a formula
     """

@@ -3,8 +3,7 @@ from __future__ import print_function
 import click
 
 from stackdio.cli.mixins.blueprints import get_blueprint_id
-from stackdio.cli.polling import poll_and_wait
-from stackdio.cli.utils import print_summary
+from stackdio.cli.utils import pass_client, print_summary, poll_and_wait
 from stackdio.client.exceptions import StackException
 
 
@@ -20,8 +19,8 @@ def stacks():
 
 
 @stacks.command(name='list')
-@click.pass_obj
-def list_stacks(obj):
+@pass_client
+def list_stacks(client):
     """
     List all stacks
     """
@@ -32,10 +31,10 @@ def list_stacks(obj):
 
 
 @stacks.command(name='launch')
-@click.pass_obj
+@pass_client
 @click.argument('blueprint_title')
 @click.argument('stack_title')
-def launch_stack(obj, blueprint_title, stack_title):
+def launch_stack(client, blueprint_title, stack_title):
     """
     Launch a stack from a blueprint
     """
@@ -68,10 +67,10 @@ def get_stack_id(client, stack_title):
 
 
 @stacks.command(name='history')
-@click.pass_obj
+@pass_client
 @click.argument('stack_title')
 @click.option('-l', '--length', type=click.INT, default=20, help='The number of entries to show')
-def stack_history(obj, stack_title, length):
+def stack_history(client, stack_title, length):
     """
     Print recent history for a stack
     """
@@ -84,9 +83,9 @@ def stack_history(obj, stack_title, length):
 
 
 @stacks.command(name='hostnames')
-@click.pass_obj
+@pass_client
 @click.argument('stack_title')
-def stack_hostnames(obj, stack_title):
+def stack_hostnames(client, stack_title):
     """
     Print hostnames for a stack
     """
@@ -101,9 +100,9 @@ def stack_hostnames(obj, stack_title):
 
 
 @stacks.command(name='delete')
-@click.pass_obj
+@pass_client
 @click.argument('stack_title')
-def delete_stack(obj, stack_title):
+def delete_stack(client, stack_title):
     """
     Delete a stack.  PERMANENT AND DESTRUCTIVE!!!
     """
@@ -120,10 +119,10 @@ def delete_stack(obj, stack_title):
 
 
 @stacks.command(name='action')
-@click.pass_obj
+@pass_client
 @click.argument('stack_title')
 @click.argument('action')
-def perform_action(obj, stack_title, action):
+def perform_action(client, stack_title, action):
     """
     Perform an action on a stack
     """
@@ -195,9 +194,9 @@ def run_command(ctx, stack_title, host_target, command, wait, timeout):
 
 
 @stacks.command(name='command-output')
-@click.pass_obj
+@pass_client
 @click.argument('command_id')
-def get_command_output(obj, command_id):
+def get_command_output(client, command_id):
     """
     Get the status and output of a command
     """
@@ -227,9 +226,9 @@ def print_logs(client, stack_id):
 
 
 @stacks.command(name='list-logs')
-@click.pass_obj
+@pass_client
 @click.argument('stack_title')
-def list_stack_logs(obj, stack_title):
+def list_stack_logs(client, stack_title):
     """
     Get a list of stack logs
     """
@@ -241,11 +240,11 @@ def list_stack_logs(obj, stack_title):
 
 
 @stacks.command(name='logs')
-@click.pass_obj
+@pass_client
 @click.argument('stack_title')
 @click.argument('log_type')
 @click.option('-l', '--lines', type=click.INT, default=25, help='number of lines to tail')
-def stack_logs(obj, stack_title, log_type, lines):
+def stack_logs(client, stack_title, log_type, lines):
     """
     Get logs for a stack
     """

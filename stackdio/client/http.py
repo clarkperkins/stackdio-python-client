@@ -19,9 +19,10 @@ from __future__ import print_function
 
 import json
 import logging
-import requests
-
+from functools import update_wrapper
 from inspect import getcallargs
+
+import requests
 
 from .exceptions import MissingUrlException
 
@@ -77,6 +78,9 @@ def request(path, method, paginate=False, jsonify=True, **req_kwargs):
     class Request(object):
         def __init__(self, dfunc=None, rfunc=None, quiet=False):
             super(Request, self).__init__()
+
+            if dfunc:
+                update_wrapper(self, dfunc)
 
             self.obj = None
 

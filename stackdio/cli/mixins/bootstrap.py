@@ -12,7 +12,7 @@ from cmd2 import Cmd
 import keyring
 import yaml
 
-from stackdio.cli.polling import poll_and_wait, TimeoutException
+from stackdio.cli.utils import TimeoutException, poll_and_wait
 
 
 class PublicKeyNotFound(Exception):

@@ -14,8 +14,35 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import time
+from functools import update_wrapper
 
 import click
+
+from stackdio.client import StackdioClient
+
+
+class TimeoutException(Exception):
+    pass
+
+
+pass_client = click.make_pass_decorator(StackdioClient)
+
+
+# def pass_client(f):
+#     def new_func(*args, **kwargs):
+#         obj = click.get_current_context().obj
+#
+#         if not isinstance(obj, dict):
+#             raise click.Abort('obj is not an instance of `dict`')
+#
+#         client = obj.get('client')
+#
+#         if not client or not isinstance(client, StackdioClient):
+#             raise click.Abort('No StackdioClient available')
+#
+#         return f(client, *args, **kwargs)
+#     return update_wrapper(new_func, f)
 
 
 def print_summary(title, components):
@@ -41,3 +68,26 @@ def print_summary(title, components):
 
         # Print a newline after each entry
         click.echo()
+
+
+def poll_and_wait(func):
+    """
+    Execute func in increments of sleep_time for no more than max_time.
+    Raise TimeoutException if we're not successful in max_time
+    """
+    def decorator(args=None, sleep_time=2, max_time=120):
+        args = args or []
+
+        current_time = 0
+
+        success = func(*args)
+        while not success and current_time < max_time:
+            current_time += sleep_time
+            time.sleep(sleep_time)
+            click.echo('.', nl=False)
+            success = func(*args)
+
+        if not success:
+            raise TimeoutException()
+
+    return update_wrapper(decorator, func)

@@ -7,6 +7,7 @@ import os
 import click
 
 from stackdio.cli.mixins import blueprints, bootstrap, formulas, stacks
+from stackdio.cli.utils import pass_client
 from stackdio.client import StackdioClient
 from stackdio.client.version import __version__
 
@@ -26,26 +27,24 @@ def stackdio(ctx):
                                '`stackdio-cli configure`')
 
     # Put the client in the obj
-    ctx.obj['client'] = client
+    ctx.obj = client
 
 
 @stackdio.command()
-@click.pass_obj
-def configure(obj):
+@pass_client
+def configure(client):
     """
     Configure the client
     """
-    client = obj['client']
-    print('configuring')
+    click.echo('configuring')
 
 
 @stackdio.command('server-version')
-@click.pass_obj
-def server_version(obj):
+@pass_client
+def server_version(client):
     """
     Print the version of the server
     """
-    client = obj['client']
     click.echo('stackdio-server, version {0}'.format(client.get_version()))
 
 
@@ -57,7 +56,7 @@ stackdio.add_command(formulas.formulas)
 
 def main():
     # Just run our CLI tool
-    stackdio(obj={})
+    stackdio()
 
 
 if __name__ == '__main__':
