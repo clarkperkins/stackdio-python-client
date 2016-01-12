@@ -25,8 +25,7 @@ from requests.exceptions import ConnectionError, MissingSchema
 from stackdio.client.compat import ConfigParser, NoOptionError
 
 
-CFG_DIR = os.path.join(os.path.expanduser('~'), '.stackdio')
-CFG_FILE = os.path.join(CFG_DIR, 'client.cfg')
+CFG_FILE = os.path.join(os.path.expanduser('~'), '.stackdio', 'client.cfg')
 
 
 class UserPath(click.Path):

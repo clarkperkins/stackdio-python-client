@@ -41,8 +41,8 @@ logger.addHandler(logging.NullHandler())
 class StackdioClient(BlueprintMixin, FormulaMixin, AccountMixin, ImageMixin,
                      RegionMixin, StackMixin, SettingsMixin, HttpMixin):
 
-    def __init__(self, url=None, username=None, password=None, verify=True):
-        self.config = StackdioConfig()
+    def __init__(self, url=None, username=None, password=None, verify=True, cfg_file=None):
+        self.config = StackdioConfig(cfg_file)
 
         self.url = None
         self.username = None
