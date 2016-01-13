@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
+import sys
 import time
 from functools import update_wrapper
 
@@ -65,11 +67,12 @@ def poll_and_wait(func):
 
         current_time = 0
 
+        click.echo('.', nl=False, file=sys.stderr)
         success = func(*args)
         while not success and current_time < max_time:
             current_time += sleep_time
             time.sleep(sleep_time)
-            click.echo('.', nl=False)
+            click.echo('.', nl=False, file=sys.stderr)
             success = func(*args)
 
         if not success:

@@ -19,8 +19,6 @@ def list_formulas(client):
     """
     List all formulas
     """
-    client = obj['client']
-
     click.echo('Getting formulas ... ')
     print_summary('Formula', client.list_formulas())
 
@@ -35,8 +33,6 @@ def import_formula(client, uri, username, password):
     """
     Import a formula
     """
-    client = obj['client']
-
     if username and not password:
         raise click.UsageError('You must provide a password when providing a username')
 
@@ -62,8 +58,6 @@ def delete_formula(client, uri):
     """
     Delete a formula
     """
-    client = obj['client']
-
     formula_id = get_formula_id(client, uri)
 
     click.confirm('Really delete formula {0}?'.format(uri), abort=True)

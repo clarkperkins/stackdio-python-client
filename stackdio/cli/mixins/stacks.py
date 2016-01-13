@@ -24,8 +24,6 @@ def list_stacks(client):
     """
     List all stacks
     """
-    client = obj['client']
-
     click.echo('Getting stacks ... ')
     print_summary('Stack', client.list_stacks())
 
@@ -38,8 +36,6 @@ def launch_stack(client, blueprint_title, stack_title):
     """
     Launch a stack from a blueprint
     """
-    client = obj['client']
-
     blueprint_id = get_blueprint_id(client, blueprint_title)
 
     click.echo('Launching stack "{0}" from blueprint "{1}"'.format(stack_title,
@@ -74,8 +70,6 @@ def stack_history(client, stack_title, length):
     """
     Print recent history for a stack
     """
-    client = obj['client']
-
     stack_id = get_stack_id(client, stack_title)
     history = client.get_stack_history(stack_id)
     for event in history[0:min(length, len(history))]:
@@ -89,8 +83,6 @@ def stack_hostnames(client, stack_title):
     """
     Print hostnames for a stack
     """
-    client = obj['client']
-
     stack_id = get_stack_id(client, stack_title)
     hosts = client.get_stack_hosts(stack_id)
 
@@ -106,8 +98,6 @@ def delete_stack(client, stack_title):
     """
     Delete a stack.  PERMANENT AND DESTRUCTIVE!!!
     """
-    client = obj['client']
-
     stack_id = get_stack_id(client, stack_title)
 
     click.confirm('Really delete stack {0}?'.format(stack_title), abort=True)
@@ -126,8 +116,6 @@ def perform_action(client, stack_title, action):
     """
     Perform an action on a stack
     """
-    client = obj['client']
-
     stack_id = get_stack_id(client, stack_title)
 
     # Prompt for confirmation if need be
@@ -148,6 +136,7 @@ def print_command_output(json_blob):
 
 
 @stacks.command(name='run')
+@pass_client
 @click.pass_context
 @click.argument('stack_title')
 @click.argument('host_target')
@@ -157,12 +146,10 @@ def print_command_output(json_blob):
 @click.option('-t', '--timeout', type=click.INT, default=120,
               help='The amount of time to wait for the command in seconds.  '
                    'Ignored if used without the -w option.')
-def run_command(ctx, stack_title, host_target, command, wait, timeout):
+def run_command(ctx, client, stack_title, host_target, command, wait, timeout):
     """
     Run a command on all hosts in the stack
     """
-    client = ctx.obj['client']
-
     stack_id = get_stack_id(client, stack_title)
 
     resp = client.run_command(stack_id, host_target, command)
@@ -200,8 +187,6 @@ def get_command_output(client, command_id):
     """
     Get the status and output of a command
     """
-    client = obj['client']
-
     resp = client.get_command(command_id)
 
     if resp['status'] != 'finished':
@@ -232,8 +217,6 @@ def list_stack_logs(client, stack_title):
     """
     Get a list of stack logs
     """
-    client = obj['client']
-
     stack_id = get_stack_id(client, stack_title)
 
     print_logs(client, stack_id)
@@ -248,8 +231,6 @@ def stack_logs(client, stack_title, log_type, lines):
     """
     Get logs for a stack
     """
-    client = obj['client']
-
     stack_id = get_stack_id(client, stack_title)
 
     split_arg = log_type.split('.')
@@ -273,3 +254,41 @@ def stack_logs(client, stack_title, log_type, lines):
         print_logs(client, stack_id)
 
         raise click.UsageError('Invalid log')
+
+
+@stacks.group(name='access-rules')
+def stack_access_rules():
+    """
+    Perform actions on stack access rules
+    """
+    pass
+
+
+def print_access_rules(components):
+    title = 'Access Rule'
+    num_components = len(components)
+
+    if num_components != 1:
+        title += 's'
+
+    click.echo('## {0} {1}'.format(num_components, title))
+
+    for item in components:
+        click.echo('- Name: {0}'.format(item.get('name')))
+        click.echo('  Description: {0}'.format(item['description']))
+        click.echo('  Group ID: {0}'.format(item['group_id']))
+        click.echo('  Host Definition: {0}'.format(item['blueprint_host_definition']['title']))
+
+        # Print a newline after each entry
+        click.echo()
+
+
+@stack_access_rules.command(name='list')
+@pass_client
+@click.argument('stack_title')
+def list_access_rules(client, stack_title):
+    stack_id = get_stack_id(client, stack_title)
+
+    rules = client.list_access_rules(stack_id)
+
+    print_access_rules(rules)
