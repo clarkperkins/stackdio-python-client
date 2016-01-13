@@ -46,19 +46,19 @@ class StackdioConfig(object):
         str(False): False,
     }
 
-    def __init__(self, config_file=CFG_FILE, section='stackdio'):
+    def __init__(self, config_file=None, section='stackdio'):
         super(StackdioConfig, self).__init__()
 
         self.section = section
 
-        self._cfg_file = config_file
+        self._cfg_file = config_file or CFG_FILE
 
         self._config = ConfigParser()
 
         self.usable_file = os.path.isfile(self._cfg_file)
 
         if self.usable_file:
-            self._config.read(config_file)
+            self._config.read(self._cfg_file)
 
         self.usable_section = self._config.has_section(self.section)
         self.usable_config = self.usable_file and self.usable_section
