@@ -3,6 +3,7 @@
 import os
 
 import click
+import click_shell
 
 from stackdio.cli.mixins import blueprints, formulas, stacks
 from stackdio.cli.utils import pass_client
@@ -16,7 +17,8 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 HIST_FILE = os.path.join(os.path.expanduser('~'), '.stackdio-cli', 'history')
 
 
-@click.group(context_settings=CONTEXT_SETTINGS)
+@click_shell.shell(context_settings=CONTEXT_SETTINGS, prompt='stackdio > ',
+                   intro='stackdio-cli, v{0}'.format(__version__), hist_file=HIST_FILE)
 @click.version_option(__version__, '-v', '--version')
 @click.option('-c', '--config-file', help='The config file to use.',
               type=click.Path(dir_okay=False, file_okay=True), default=CFG_FILE,

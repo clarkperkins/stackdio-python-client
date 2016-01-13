@@ -44,12 +44,11 @@ SHORT_DESCRIPTION = ('A cloud deployment, automation, and orchestration '
 with open('README.md') as f:
     LONG_DESCRIPTION = f.read()
 
-CFG_DIR = os.path.join(os.path.expanduser('~'), '.stackdio-cli')
-
 requirements = [
     'Jinja2==2.7.3',
     'PyYAML>=3.10',
     'click>=6.0,<7.0',
+    'click-shell==0.3',
     'colorama>=0.3,<0.4',
     'keyring==3.7',
     'requests>=2.4.0',
@@ -76,14 +75,6 @@ if __name__ == '__main__':
         license='Apache 2.0',
         include_package_data=True,
         packages=find_packages(),
-        data_files=[
-            (CFG_DIR,
-                [
-                    'bootstrap.yaml',
-                ]),
-            (os.path.join(CFG_DIR, 'blueprints'),
-                ['blueprints/%s' % f for f in os.listdir('blueprints')]),
-        ],
         zip_safe=False,
         install_requires=requirements,
         dependency_links=[],
