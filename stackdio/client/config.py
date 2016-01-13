@@ -221,3 +221,48 @@ class StackdioConfig(object):
                                              prompt_suffix='? ',
                                              type=UserPath(exists=True, file_okay=False,
                                                            resolve_path=True))
+
+
+# FOR BACKWARDS COMPATIBILITY!!! To be removed at some point.
+@click.command(context_settings=dict(help_option_names=['-h', '--help']))
+@click.option('-o', '--old-file', default=os.path.expanduser('~/.stackdio-cli/config.json'),
+              type=click.Path(exists=True), help='Path to the old JSON config file')
+@click.option('-n', '--new-file', default=CFG_FILE, type=click.Path(),
+              help='Path to the new cfg format file.  Must not already exist.')
+def migrate_old_config(old_file, new_file):
+    """
+    Used to migrate an old JSON config file to a new one
+    """
+    if os.path.exists(new_file):
+        raise click.UsageError('The new config file must not already exist')
+
+    old_keys = ['username', 'url', 'verify', 'blueprint_dir']
+
+    config = StackdioConfig(new_file)
+
+    import json
+    with open(old_file, 'r') as f:
+        old_config = json.load(f)
+
+        for key in old_keys:
+            if key in old_config:
+                config[key] = old_config[key]
+
+    if 'url' not in config:
+        config.get_url()
+
+    if 'username' not in config or config.get_password() is None:
+        config.get_username()
+
+    if 'blueprint_dir' not in config:
+        config.get_blueprint_dir()
+
+    config.save()
+
+
+def main():
+    migrate_old_config()
+
+
+if __name__ == '__main__':
+    main()

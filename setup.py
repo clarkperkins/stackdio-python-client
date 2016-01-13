@@ -85,6 +85,7 @@ if __name__ == '__main__':
             'console_scripts': [
                 'stackdio-cli=stackdio.cli:main',
                 'blueprint-generator=stackdio.cli.blueprints:main',
+                'stackdio-config-convert=stackdio.client.config:main',
             ],
         },
         classifiers=[
