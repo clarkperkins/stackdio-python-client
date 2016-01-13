@@ -131,21 +131,6 @@ class StackMixin(HttpMixin):
         """
         pass
 
-    @deprecated
-    def get_access_rule_id(self, stack_id, title):
-        """Find an access rule id"""
-
-        rules = self.list_access_rules(stack_id)
-
-        try:
-            for group in rules:
-                if group.get('blueprint_host_definition').get('title') == title:
-                    return group.get('id')
-        except TypeError:
-            pass
-
-        raise StackException('Access Rule %s not found' % title)
-
     @get('security_groups/{group_id}/rules/', paginate=True)
     def list_rules_for_group(self, group_id):
         pass
