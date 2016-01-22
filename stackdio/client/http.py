@@ -44,17 +44,11 @@ class HttpMixin(object):
         'xml': {'content-type': 'application/xml'},
     }
 
-    def __init__(self, url, auth=None, verify=True):
+    def __init__(self):
         super(HttpMixin, self).__init__()
-
-        self.url = url
-        self.http_options = {
-            'auth': auth,
-            'verify': verify,
-        }
         self._http_log = logger
 
-        if not verify:
+        if not self.verify:
             if self._http_log.handlers:
                 self._http_log.warn(HTTP_INSECURE_MESSAGE)
             else:
@@ -62,6 +56,22 @@ class HttpMixin(object):
 
             from requests.packages.urllib3 import disable_warnings
             disable_warnings()
+
+    @property
+    def url(self):
+        raise NotImplementedError()
+
+    @property
+    def username(self):
+        raise NotImplementedError()
+
+    @property
+    def password(self):
+        raise NotImplementedError()
+
+    @property
+    def verify(self):
+        raise NotImplementedError()
 
     def usable(self):
         raise NotImplementedError()
@@ -124,7 +134,7 @@ def request(path, method, paginate=False, jsonify=True, **req_kwargs):
             assert isinstance(self.obj, HttpMixin)
 
             if not self.obj.usable():
-                raise MissingUrlException('No url is set')
+                raise MissingUrlException('No url is set.  Please run `configure`.')
 
             none_on_404 = kwargs.pop('none_on_404', False)
             raise_for_status = kwargs.pop('raise_for_status', True)
@@ -149,10 +159,10 @@ def request(path, method, paginate=False, jsonify=True, **req_kwargs):
             result = requests.request(method,
                                       url,
                                       data=data,
-                                      auth=self.obj.http_options['auth'],
+                                      auth=(self.obj.username, self.obj.password),
                                       headers=self.headers,
                                       params=kwargs,
-                                      verify=self.obj.http_options['verify'])
+                                      verify=self.obj.verify)
 
             # Handle special conditions
             if none_on_404 and result.status_code == 404:
@@ -182,10 +192,10 @@ def request(path, method, paginate=False, jsonify=True, **req_kwargs):
                     next_page = requests.request(method,
                                                  next_url,
                                                  data=data,
-                                                 auth=self.obj.http_options['auth'],
+                                                 auth=(self.obj.username, self.obj.password),
                                                  headers=self.headers,
                                                  params=kwargs,
-                                                 verify=self.obj.http_options['verify']).json()
+                                                 verify=self.obj.verify).json()
                     res.extend(next_page['results'])
                     next_url = next_page.get('next')
 

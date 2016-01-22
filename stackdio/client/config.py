@@ -16,6 +16,7 @@
 #
 
 import os
+import shutil
 
 import click
 import keyring
@@ -51,7 +52,7 @@ class StackdioConfig(object):
 
         self.section = section
 
-        self._cfg_file = config_file or CFG_FILE
+        self._cfg_file = os.path.abspath(config_file or CFG_FILE)
 
         self._config = ConfigParser()
 
@@ -67,6 +68,11 @@ class StackdioConfig(object):
             self._config.add_section(section)
 
     def save(self):
+        full_path = os.path.dirname(self._cfg_file)
+
+        if not os.path.isdir(full_path):
+            os.makedirs(full_path)
+
         with open(self._cfg_file, 'w') as f:
             self._config.write(f)
 

@@ -44,31 +44,19 @@ class StackdioClient(BlueprintMixin, FormulaMixin, AccountMixin, ImageMixin,
     def __init__(self, url=None, username=None, password=None, verify=True, cfg_file=None):
         self.config = StackdioConfig(cfg_file)
 
-        self.url = None
-        self.username = None
-        self.password = None
-        self.verify = None
-
-        if self.config.usable_config:
-            # Grab stuff from the config
-            self.url = self.config.get('url')
-            self.username = self.config.get('username')
-            self.password = self.config.get_password()
-            self.verify = self.config.get('verify', True)
+        self._password = self.config.get_password()
 
         if url is not None:
-            self.url = url
+            self.config['url'] = url
 
         if username is not None and password is not None:
-            self.username = username
-            self.password = password
+            self.config['username'] = username
+            self._password = password
 
         if verify is not None:
-            self.verify = verify
+            self.config['verify'] = verify
 
-        super(StackdioClient, self).__init__(url=self.url,
-                                             auth=(self.username, self.password),
-                                             verify=self.verify)
+        super(StackdioClient, self).__init__()
 
         if self.usable():
             try:
@@ -79,6 +67,22 @@ class StackdioClient(BlueprintMixin, FormulaMixin, AccountMixin, ImageMixin,
             if self.version and (self.version[0] != 0 or self.version[1] != 7):
                 raise IncompatibleVersionException('Server version {0}.{1}.{2} not '
                                                    'supported.'.format(**self.version))
+
+    @property
+    def url(self):
+        return self.config.get('url')
+
+    @property
+    def username(self):
+        return self.config.get('username')
+
+    @property
+    def password(self):
+        return self._password or self.config.get_password()
+
+    @property
+    def verify(self):
+        return self.config.get('verify', True)
 
     def usable(self):
         return self.url and self.username and self.password
