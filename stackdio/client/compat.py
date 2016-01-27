@@ -15,22 +15,9 @@
 # limitations under the License.
 #
 
-
-class MissingUrlException(Exception):
-    pass
-
-
-class StackException(Exception):
-    pass
-
-
-class BlueprintException(Exception):
-    pass
-
-
-class IncompatibleVersionException(Exception):
-    pass
-
-
-class InvalidVersionStringException(ValueError):
-    pass
+try:
+    # Python 2
+    from ConfigParser import ConfigParser, NoOptionError
+except ImportError:
+    # Python 3
+    from configparser import ConfigParser, NoOptionError

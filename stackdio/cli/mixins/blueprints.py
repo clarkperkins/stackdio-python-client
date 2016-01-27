@@ -1,270 +1,209 @@
-from __future__ import print_function
 
 import json
 import os
-import argparse
-import sys
 
+import click
 import yaml
-from cmd2 import Cmd
 
-from stackdio.client.exceptions import StackException
 from stackdio.cli.blueprints.generator import BlueprintGenerator, BlueprintException
+from stackdio.cli.utils import print_summary, pass_client
 
 
 class BlueprintNotFound(Exception):
     pass
 
 
-class BlueprintMixin(Cmd):
-    BLUEPRINT_COMMANDS = ["list", "list-templates", "create", "create-all", "delete", "delete-all"]
+@click.group()
+def blueprints():
+    """
+    Perform actions on blueprints
+    """
+    pass
 
-    def do_blueprints(self, arg):
-        """Entry point to controlling blueprints."""
 
-        USAGE = "Usage: blueprints COMMAND\nWhere COMMAND is one of: %s" % (
-            ", ".join(self.BLUEPRINT_COMMANDS))
+@blueprints.command(name='list')
+@pass_client
+def list_blueprints(client):
+    """
+    List all blueprints
+    """
+    click.echo('Getting blueprints ... ')
+    print_summary('Blueprint', client.list_blueprints())
 
-        args = arg.split()
-        if not args or args[0] not in self.BLUEPRINT_COMMANDS:
-            print(USAGE)
-            return
 
-        bp_cmd = args[0]
+def _recurse_dir(dirname, extensions, prefix=''):
+    for template in os.listdir(dirname):
+        if os.path.isdir(os.path.join(dirname, template)):
+            # Recursively look at the subdirectories
+            _recurse_dir(os.path.join(dirname, template),
+                         extensions,
+                         prefix + template + os.sep)
+        elif template.split('.')[-1] in extensions and not template.startswith('_'):
+            click.echo('    {0}'.format(prefix + template))
 
-        # Sneakiness for argparse
-        saved = sys.argv[0]
-        sys.argv[0] = 'blueprints {0}'.format(bp_cmd)
 
-        if bp_cmd == "list":
-            self._list_blueprints()
-        elif bp_cmd == "list-templates":
-            self._list_templates()
-        elif bp_cmd == "create":
-            self._create_blueprint(args[1:])
-        elif bp_cmd == "create-all":
-            self._create_all(args[1:])
-        elif bp_cmd == "delete":
-            self._delete_blueprint(args[1:])
-        elif bp_cmd == "delete-all":
-            self._delete_all()
+@blueprints.command(name='list-templates')
+@pass_client
+def list_templates(client):
+    """
+    List all the blueprint templates
+    """
+    if 'blueprint_dir' not in client.config:
+        click.echo('Missing blueprint directory config')
+        return
 
+    blueprint_dir = os.path.expanduser(client.config['blueprint_dir'])
+
+    click.echo('Template mappings:')
+    mapping = yaml.safe_load(open(os.path.join(blueprint_dir, 'mappings.yaml'), 'r'))
+    if mapping:
+        for blueprint in mapping:
+            click.echo('    {0}'.format(blueprint))
+
+    click.echo()
+
+    click.echo('Templates:')
+    _recurse_dir(os.path.join(blueprint_dir, 'templates'), ['json'])
+
+    click.echo()
+
+    click.echo('Var files:')
+    _recurse_dir(os.path.join(blueprint_dir, 'var_files'), ['yaml', 'yml'])
+
+
+def _create_single_blueprint(config, template_file, var_files, no_prompt):
+    blueprint_dir = os.path.expanduser(config['blueprint_dir'])
+
+    gen = BlueprintGenerator([os.path.join(blueprint_dir, 'templates')])
+
+    if not os.path.exists(os.path.join(blueprint_dir, 'templates', template_file)):
+        click.secho('You gave an invalid template', fg='red')
+        return
+
+    if template_file.startswith('_'):
+        click.secho('WARNING: Templates beginning with \'_\' are generally not meant to '
+                    'be used directly.  Please be sure this is really what you want.\n',
+                    fg='magenta')
+
+    final_var_files = []
+
+    # Build a list with full paths in it instead of relative paths
+    for var_file in var_files:
+        var_file = os.path.join(blueprint_dir, 'var_files', var_file)
+        if os.path.exists(var_file):
+            final_var_files.append(open(var_file, 'r'))
         else:
-            print(USAGE)
+            click.secho('WARNING: Variable file {0} was not found.  Ignoring.'.format(var_file),
+                        fg='magenta')
 
-        # End sneakiness
-        sys.argv[0] = saved
+    # Generate the JSON for the blueprint
+    return gen.generate(template_file,
+                        final_var_files,  # Pass in a list
+                        prompt=no_prompt)
 
-    def complete_blueprints(self, text, line, begidx, endidx):
-        # not using line, begidx, or endidx, thus the following pylint disable
-        # pylint: disable=W0613
-        return [i for i in self.BLUEPRINT_COMMANDS if i.startswith(text)]
 
-    def help_blueprints(self):
-        print("Manage blueprints.")
-        print("Sub-commands can be one of:\n\t{0}".format(
-            ", ".join(self.BLUEPRINT_COMMANDS)))
-        print("Try 'blueprints COMMAND' to get help on (most) sub-commands")
+@blueprints.command(name='create')
+@pass_client
+@click.option('-m', '--mapping',
+              help='The entry in the map file to use')
+@click.option('-t', '--template',
+              help='The template file to use')
+@click.option('-v', '--var-file', multiple=True,
+              help='The variable files to use.  You may pass in more than one.  They '
+                   'will be loaded from left to right, so variables in the rightmost '
+                   'var files will override those in var files to the left.')
+@click.option('-n', '--no-prompt', is_flag=True, default=True,
+              help='Don\'t prompt for missing variables in the template')
+def create_blueprint(client, mapping, template, var_file, no_prompt):
+    """
+    Create a blueprint
+    """
+    if not template and not mapping:
+        raise click.UsageError('You must specify either a template or a mapping.')
 
-    def _list_blueprints(self):
-        """List all blueprints"""
+    click.secho('Advanced users only - use the web UI if this isn\'t you!\n', fg='green')
 
-        print("Getting blueprints ... ")
-        blueprints = self.stacks.list_blueprints()
-        self._print_summary("Blueprint", blueprints)
+    blueprint_dir = client.config['blueprint_dir']
 
-    def _recurse_dir(self, dirname, extensions, prefix=''):
-        for template in os.listdir(dirname):
-            if os.path.isdir(os.path.join(dirname, template)):
-                # Recursively look at the subdirectories
-                self._recurse_dir(os.path.join(dirname, template),
-                                  extensions,
-                                  prefix + template + os.sep)
-            elif template.split('.')[-1] in extensions and not template.startswith('_'):
-                print('    {0}'.format(prefix + template))
-
-    def _list_templates(self):
-        if 'blueprint_dir' not in self.config:
-            print("Missing blueprint directory config")
-            return
-
-        blueprint_dir = os.path.expanduser(self.config['blueprint_dir'])
-
-        print('Template mappings:')
+    if mapping:
         mapping = yaml.safe_load(open(os.path.join(blueprint_dir, 'mappings.yaml'), 'r'))
-        if mapping:
-            for blueprint in mapping:
-                print('    {0}'.format(blueprint))
-
-        print('')
-
-        print('Templates:')
-        self._recurse_dir(os.path.join(blueprint_dir, 'templates'), ['json'])
-
-        print('')
-
-        print('Var files:')
-        self._recurse_dir(os.path.join(blueprint_dir, 'var_files'), ['yaml', 'yml'])
-
-    def _create_blueprint(self, args, bootstrap=False):
-        """Create a blueprint"""
-
-        parser = argparse.ArgumentParser()
-
-        parser.add_argument('-m', '--mapping',
-                            help='The entry in the map file to use')
-
-        parser.add_argument('-t', '--template',
-                            help='The template file to use')
-
-        parser.add_argument('-v', '--var-file',
-                            action='append',
-                            help='The variable files to use.  You may pass in more than one.  They '
-                                 'will be loaded from left to right, so variables in the rightmost '
-                                 'var files will override those in var files to the left.')
-
-        parser.add_argument('-n', '--no-prompt',
-                            action='store_false',
-                            help='Don\'t prompt for missing variables in the template')
-
-        args = parser.parse_args(args)
-
-        if not bootstrap:
-            print(self.colorize(
-                "Advanced users only - use the web UI if this isn't you!\n",
-                "green"))
-
-            if not args.template and not args.mapping:
-                print(self.colorize('You must specify either a template or a mapping\n', 'red'))
-                parser.print_help()
+        if not mapping or mapping not in mapping:
+            click.secho('You gave an invalid mapping.', fg='red')
+            return
+        else:
+            template = mapping[mapping].get('template')
+            var_file = mapping[mapping].get('var_files', [])
+            if not template:
+                click.secho('Your mapping must specify a template.', fg='red')
                 return
 
-        blueprint_dir = os.path.expanduser(self.config['blueprint_dir'])
+    bp_json = _create_single_blueprint(client.config, template, var_file, no_prompt)
 
-        template_file = args.template
-        # Should always be a list, and the generator can handle that
-        var_files = args.var_file
-        if not var_files:
-            # If -v is never specified, argparse give back None, we need a list
-            var_files = []
+    if not bp_json:
+        # There was an error with the blueprint creation, and there should already be an
+        # error message printed
+        return
 
-        if args.mapping:
-            mapping = yaml.safe_load(open(os.path.join(blueprint_dir, 'mappings.yaml'), 'r'))
-            if not mapping or args.mapping not in mapping:
-                print(self.colorize('You gave an invalid mapping.', 'red'))
-                return
-            else:
-                template_file = mapping[args.mapping].get('template')
-                var_files = mapping[args.mapping].get('var_files', [])
-                if not template_file:
-                    print(self.colorize('Your mapping must specify a template.', 'red'))
-                    return
+    click.echo('Creating blueprint')
 
-        bp_json = self._create_single(template_file, var_files, args.no_prompt)
+    r = client.create_blueprint(bp_json, raise_for_status=False)
+    click.echo(json.dumps(r, indent=2))
 
-        if not bp_json:
-            # There was an error with the blueprint creation, and there should already be an
-            # error message printed
-            return
 
-        if not bootstrap:
-            print("Creating blueprint")
+@blueprints.command(name='create-all')
+@pass_client
+@click.confirmation_option('-y', '--yes', prompt='Really create all blueprints?')
+def create_all_blueprints(client):
+    """
+    Create all the blueprints in the map file
+    """
+    blueprint_dir = os.path.expanduser(client.config['blueprint_dir'])
+    mapping = yaml.safe_load(open(os.path.join(blueprint_dir, 'mappings.yaml'), 'r'))
 
-        r = self.stacks.create_blueprint(bp_json)
-        print(json.dumps(r, indent=2))
-
-    def _create_single(self, template_file, var_files, no_prompt):
-        blueprint_dir = os.path.expanduser(self.config['blueprint_dir'])
-
-        gen = BlueprintGenerator([os.path.join(blueprint_dir, 'templates')])
-
-        if not os.path.exists(os.path.join(blueprint_dir, 'templates', template_file)):
-            print(self.colorize('You gave an invalid template', 'red'))
-            return
-
-        if template_file.startswith('_'):
-            print(self.colorize("WARNING: Templates beginning with '_' are generally not meant to "
-                                "be used directly.  Please be sure this is really what you want.\n",
-                                "magenta"))
-
-        final_var_files = []
-
-        # Build a list with full paths in it instead of relative paths
-        for var_file in var_files:
-            var_file = os.path.join(blueprint_dir, 'var_files', var_file)
-            if os.path.exists(var_file):
-                final_var_files.append(var_file)
-            else:
-                print(self.colorize("WARNING: Variable file {0} was not found.  "
-                                    "Ignoring.".format(var_file), "magenta"))
-
-        # Generate the JSON for the blueprint
-        return gen.generate(template_file,
-                            final_var_files,  # Pass in a list
-                            prompt=no_prompt)
-
-    def _create_all(self, args):
-        """Create all the blueprints in the map file"""
-        parser = argparse.ArgumentParser()
-
-        parser.add_argument('--no-prompt',
-                            action='store_false',
-                            help='Don\'t prompt to create all blueprints')
-
-        args = parser.parse_args(args)
-
-        if args.no_prompt:
-            really = raw_input("Really create all blueprints (y/n)? ")
-            if really not in ['Y', 'y']:
-                return
-
-        blueprint_dir = os.path.expanduser(self.config['blueprint_dir'])
-        mapping = yaml.safe_load(open(os.path.join(blueprint_dir, 'mappings.yaml'), 'r'))
-
-        for name, vals in mapping.items():
-            try:
-                bp_json = self._create_single(vals['template'], vals['var_file'], False)
-                self.stacks.create_blueprint(bp_json)
-                print(self.colorize('Created blueprint {0}'.format(name), 'green'))
-            except BlueprintException:
-                print(self.colorize('Blueprint {0} NOT created\n'.format(name), 'magenta'))
-
-    def _delete_blueprint(self, args):
-        """Delete a blueprint"""
-
-        if len(args) != 1:
-            print("Usage: blueprint delete BLUEPRINT_NAME")
-            return
-
-        blueprint_id = self._get_blueprint_id(args[0])
-
-        really = raw_input("Really delete blueprint {0} (y/n)? ".format(args[0]))
-        if really not in ["y", "Y"]:
-            print("Aborting deletion")
-            return
-
-        print("Deleting {0}".format(args[0]))
-        self.stacks.delete_blueprint(blueprint_id)
-        self._list_blueprints()
-
-    def _delete_all(self):
-        """Delete all blueprints"""
-        really = raw_input("Really delete all blueprints?  This is completely destructive, and you "
-                           "will never get them back. (y/n) ")
-        if really not in ['Y', 'y']:
-            return
-
-        for blueprint in self.stacks.list_blueprints():
-            self.stacks.delete_blueprint(blueprint['id'])
-            print(self.colorize('Deleted blueprint {0}'.format(blueprint['title']), 'magenta'))
-
-    def _get_blueprint_id(self, blueprint_name):
-        """Validate that a blueprint exists"""
-
+    for name, vals in mapping.items():
         try:
-            return self.stacks.get_blueprint_id(blueprint_name)
-        except StackException:
-            print(self.colorize(
-                "Blueprint [{0}] does not exist".format(blueprint_name),
-                "red"))
-            raise
+            bp_json = _create_single_blueprint(client.config, vals['template'],
+                                               vals['var_file'], False)
+            client.create_blueprint(bp_json)
+            click.secho('Created blueprint {0}'.format(name), fg='green')
+        except BlueprintException:
+            click.secho('Blueprint {0} NOT created\n'.format(name), fg='magenta')
+
+
+def get_blueprint_id(client, blueprint_title):
+    found_blueprints = client.search_blueprints(title=blueprint_title)
+
+    if len(found_blueprints) == 0:
+        raise click.Abort('Blueprint "{0}" does not exist'.format(blueprint_title))
+    elif len(found_blueprints) > 1:
+        raise click.Abort('Multiple blueprints matching "{0}" were found'.format(blueprint_title))
+    else:
+        return found_blueprints[0]['id']
+
+
+@blueprints.command(name='delete')
+@pass_client
+@click.argument('title')
+def delete_blueprint(client, title):
+    """
+    Delete a blueprint
+    """
+    blueprint_id = get_blueprint_id(client, title)
+
+    click.confirm('Really delete blueprint {0}?'.format(title), abort=True)
+
+    click.echo('Deleting {0}'.format(title))
+    client.delete_blueprint(blueprint_id)
+
+
+@blueprints.command(name='delete-all')
+@pass_client
+@click.confirmation_option('-y', '--yes', prompt='Really delete all blueprints?  This is '
+                           'completely destructive, and you will never get them back.')
+def delete_all_blueprints(client):
+    """
+    Delete all blueprints
+    """
+    for blueprint in client.list_blueprints():
+        client.delete_blueprint(blueprint['id'])
+        click.secho('Deleted blueprint {0}'.format(blueprint['title']), fg='magenta')

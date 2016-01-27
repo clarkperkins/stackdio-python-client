@@ -19,39 +19,36 @@ from __future__ import print_function
 
 import json
 import logging
-import requests
-
-from functools import wraps
+from functools import update_wrapper
 from inspect import getcallargs
 
-from .exceptions import NoAdminException
+import requests
+
+from .exceptions import MissingUrlException
 
 logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
-HTTP_INSECURE_MESSAGE = "\n".join([
+HTTP_INSECURE_MESSAGE = '\n'.join([
     "You have chosen not to verify ssl connections.",
     "This is insecure, but it's your choice.",
-    "This has been your single warning."])
+    "This has been your single warning."
+])
 
 
 class HttpMixin(object):
     """Add HTTP request features to an object"""
 
     HEADERS = {
-        'json': {"content-type": "application/json"},
-        'xml': {"content-type": "application/xml"}
+        'json': {'content-type': 'application/json'},
+        'xml': {'content-type': 'application/xml'},
     }
 
-    def __init__(self, auth=None, verify=True):
+    def __init__(self):
         super(HttpMixin, self).__init__()
+        self._http_log = logger
 
-        self._http_options = {
-            'auth': auth,
-            'verify': verify,
-        }
-        self._http_log = logging.getLogger(__name__)
-
-        if not verify:
+        if not self.verify:
             if self._http_log.handlers:
                 self._http_log.warn(HTTP_INSECURE_MESSAGE)
             else:
@@ -59,6 +56,25 @@ class HttpMixin(object):
 
             from requests.packages.urllib3 import disable_warnings
             disable_warnings()
+
+    @property
+    def url(self):
+        raise NotImplementedError()
+
+    @property
+    def username(self):
+        raise NotImplementedError()
+
+    @property
+    def password(self):
+        raise NotImplementedError()
+
+    @property
+    def verify(self):
+        raise NotImplementedError()
+
+    def usable(self):
+        raise NotImplementedError()
 
 
 def default_response(obj, response):
@@ -72,6 +88,9 @@ def request(path, method, paginate=False, jsonify=True, **req_kwargs):
     class Request(object):
         def __init__(self, dfunc=None, rfunc=None, quiet=False):
             super(Request, self).__init__()
+
+            if dfunc:
+                update_wrapper(self, dfunc)
 
             self.obj = None
 
@@ -95,19 +114,28 @@ def request(path, method, paginate=False, jsonify=True, **req_kwargs):
 
         def __repr__(self):
             if self.obj:
-                return '<bound method HTTP {0} request for \'/api/{1}\' on {2}>'.format(method, path, repr(self.obj))
+                return ('<bound method HTTP {0} request for '
+                        '\'/api/{1}\' on {2}>'.format(method, path, repr(self.obj)))
             else:
                 return super(Request, self).__repr__()
 
         # We need this so we can save the client object as an attribute, and then it can be used
         # in __call__
         def __get__(self, obj, objtype=None):
+            if objtype:
+                assert issubclass(objtype, HttpMixin)
+            assert isinstance(obj, HttpMixin)
+
             self.obj = obj
-            assert issubclass(objtype, HttpMixin)
             return self
 
         # Here's how the request actually happens
         def __call__(self, *args, **kwargs):
+            assert isinstance(self.obj, HttpMixin)
+
+            if not self.obj.usable():
+                raise MissingUrlException('No url is set.  Please run `configure`.')
+
             none_on_404 = kwargs.pop('none_on_404', False)
             raise_for_status = kwargs.pop('raise_for_status', True)
 
@@ -131,10 +159,10 @@ def request(path, method, paginate=False, jsonify=True, **req_kwargs):
             result = requests.request(method,
                                       url,
                                       data=data,
-                                      auth=self.obj._http_options['auth'],
+                                      auth=(self.obj.username, self.obj.password),
                                       headers=self.headers,
                                       params=kwargs,
-                                      verify=self.obj._http_options['verify'])
+                                      verify=self.obj.verify)
 
             # Handle special conditions
             if none_on_404 and result.status_code == 404:
@@ -164,10 +192,10 @@ def request(path, method, paginate=False, jsonify=True, **req_kwargs):
                     next_page = requests.request(method,
                                                  next_url,
                                                  data=data,
-                                                 auth=self.obj._http_options['auth'],
+                                                 auth=(self.obj.username, self.obj.password),
                                                  headers=self.headers,
                                                  params=kwargs,
-                                                 verify=self.obj._http_options['verify']).json()
+                                                 verify=self.obj.verify).json()
                     res.extend(next_page['results'])
                     next_url = next_page.get('next')
 
@@ -180,7 +208,6 @@ def request(path, method, paginate=False, jsonify=True, **req_kwargs):
 
 
 # Define the decorators for all the methods
-
 def get(path, paginate=False, jsonify=True):
     return request(path, 'GET', paginate=paginate, jsonify=jsonify)
 
@@ -207,23 +234,3 @@ def patch(path):
 
 def delete(path):
     return request(path, 'DELETE')
-
-
-def use_admin_auth(func):
-
-    @wraps(func)
-    def wrapper(obj, *args, **kwargs):
-        # Save and set the auth to use the admin auth
-        auth = obj._http_options['auth']
-        try:
-            obj._http_options['auth'] = obj._http_options['admin']
-        except KeyError:
-            raise NoAdminException("No admin credentials were specified")
-
-        # Call the original function
-        output = func(*args, **kwargs)
-
-        # Set the auth back to the original
-        obj._http_options['auth'] = auth
-        return output
-    return wrapper

@@ -17,48 +17,75 @@
 
 import logging
 
-from .http import get, post, patch
-from .exceptions import BlueprintException, StackException, IncompatibleVersionException
-
-from .blueprint import BlueprintMixin
-from .formula import FormulaMixin
 from .account import AccountMixin
+from .blueprint import BlueprintMixin
+from .config import StackdioConfig
+from .exceptions import (
+    BlueprintException,
+    StackException,
+    IncompatibleVersionException,
+    MissingUrlException
+)
+from .formula import FormulaMixin
+from .http import HttpMixin, get, post, patch
 from .image import ImageMixin
 from .region import RegionMixin
 from .settings import SettingsMixin
 from .stack import StackMixin
-
 from .version import _parse_version_string
 
 logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 
-class StackdIO(BlueprintMixin, FormulaMixin, AccountMixin,
-               ImageMixin, RegionMixin, StackMixin, SettingsMixin):
+class StackdioClient(BlueprintMixin, FormulaMixin, AccountMixin, ImageMixin,
+                     RegionMixin, StackMixin, SettingsMixin, HttpMixin):
 
-    def __init__(self, protocol="https", host="localhost", port=443,
-                 base_url=None, auth=None, auth_admin=None,
-                 verify=True):
-        """auth_admin is optional, only needed for creating provider, profile,
-        and base security groups"""
+    def __init__(self, url=None, username=None, password=None, verify=True, cfg_file=None):
+        self.config = StackdioConfig(cfg_file)
 
-        super(StackdIO, self).__init__(auth=auth, verify=verify)
-        if base_url:
-            self.url = base_url if base_url.endswith('/') else "%s/" % base_url
-        else:
-            self.url = "{protocol}://{host}:{port}/api/".format(
-                protocol=protocol,
-                host=host,
-                port=port)
+        self._password = self.config.get_password()
 
-        self.auth = auth
-        self.auth_admin = auth_admin
+        if url is not None:
+            self.config['url'] = url
 
-        _, self.version = _parse_version_string(self.get_version())
+        if username is not None and password is not None:
+            self.config['username'] = username
+            self._password = password
 
-        if self.version[0] != 0 or self.version[1] != 7:
-            raise IncompatibleVersionException('Server version {0}.{1}.{2} not '
-                                               'supported.'.format(**self.version))
+        if verify is not None:
+            self.config['verify'] = verify
+
+        super(StackdioClient, self).__init__()
+
+        if self.usable():
+            try:
+                _, self.version = _parse_version_string(self.get_version(raise_for_status=False))
+            except MissingUrlException:
+                self.version = None
+
+            if self.version and (self.version[0] != 0 or self.version[1] != 7):
+                raise IncompatibleVersionException('Server version {0}.{1}.{2} not '
+                                                   'supported.'.format(**self.version))
+
+    @property
+    def url(self):
+        return self.config.get('url')
+
+    @property
+    def username(self):
+        return self.config.get('username')
+
+    @property
+    def password(self):
+        return self._password or self.config.get_password()
+
+    @property
+    def verify(self):
+        return self.config.get('verify', True)
+
+    def usable(self):
+        return self.url and self.username and self.password
 
     @get('')
     def get_root(self):
@@ -73,12 +100,12 @@ class StackdIO(BlueprintMixin, FormulaMixin, AccountMixin,
         return resp['version']
 
     @post('cloud/security_groups/')
-    def create_security_group(self, name, description, cloud_provider, is_default=True):
-        """Create a security group"""
+    def create_security_group(self, name, description, cloud_account, group_id, is_default=True):
 
         return {
-            "name": name,
-            "description": description,
-            "cloud_provider": cloud_provider,
-            "is_default": is_default
+            'name': name,
+            'description': description,
+            'cloud_account': cloud_account,
+            'group_id': group_id,
+            'is_default': is_default
         }

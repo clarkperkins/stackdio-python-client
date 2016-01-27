@@ -72,6 +72,30 @@ class StackMixin(HttpMixin):
 
         return {'action': action}
 
+    @post('stacks/{stack_id}/commands/')
+    def run_command(self, stack_id, host_target, command):
+        """
+        Run a command on all stacks
+        """
+        return {
+            'host_target': host_target,
+            'command': command,
+        }
+
+    @get('stacks/{stack_id}/commands/')
+    def get_stack_commands(self, stack_id):
+        """
+        Get all commands for a stack
+        """
+        pass
+
+    @get('commands/{command_id}/')
+    def get_command(self, command_id):
+        """
+        Get information about a command
+        """
+        pass
+
     @get('stacks/{stack_id}/history/', paginate=True)
     def get_stack_history(self, stack_id):
         """Get stack info"""
@@ -82,7 +106,12 @@ class StackMixin(HttpMixin):
         """Get a list of all stack hosts"""
         pass
 
-    @get('stacks/{stack_id}/logs/{log_type}.{level}.{date}', jsonify=False)
+    @get('stacks/{stack_id}/logs/')
+    def list_stack_logs(self, stack_id):
+        """Get a list of stack logs"""
+        pass
+
+    @get('stacks/{stack_id}/logs/{log_type}.{level}.{date}?tail={tail}', jsonify=False)
     def get_logs(self, stack_id, log_type, level='log', date='latest', tail=None):
         """Get logs for a stack"""
 
@@ -101,21 +130,6 @@ class StackMixin(HttpMixin):
         :rtype: list
         """
         pass
-
-    @deprecated
-    def get_access_rule_id(self, stack_id, title):
-        """Find an access rule id"""
-
-        rules = self.list_access_rules(stack_id)
-
-        try:
-            for group in rules:
-                if group.get('blueprint_host_definition').get('title') == title:
-                    return group.get('id')
-        except TypeError:
-            pass
-
-        raise StackException('Access Rule %s not found' % title)
 
     @get('security_groups/{group_id}/rules/', paginate=True)
     def list_rules_for_group(self, group_id):

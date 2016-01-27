@@ -1,82 +1,65 @@
 from __future__ import print_function
 
-from cmd2 import Cmd
+import click
+
+from stackdio.cli.utils import pass_client, print_summary
 
 
-class FormulaMixin(Cmd):
-    FORMULA_COMMANDS = ["list", "import", "delete"]
+@click.group()
+def formulas():
+    """
+    Perform actions on formulas
+    """
+    pass
 
-    def do_formulas(self, arg):
-        """Entry point to controlling formulas."""
 
-        USAGE = "Usage: formulas COMMAND\nWhere COMMAND is one of: %s" % (
-            ", ".join(self.FORMULA_COMMANDS))
+@formulas.command(name='list')
+@pass_client
+def list_formulas(client):
+    """
+    List all formulas
+    """
+    click.echo('Getting formulas ... ')
+    print_summary('Formula', client.list_formulas())
 
-        args = arg.split()
-        if not args or args[0] not in self.FORMULA_COMMANDS:
-            print(USAGE)
-            return
 
-        formula_cmd = args[0]
-        if formula_cmd == "list":
-            self._list_formulas()
-        elif formula_cmd == "import":
-            self._import_formula(args[1:])
-        elif formula_cmd == "delete":
-            self._delete_formula(args[1:])
+@formulas.command(name='import')
+@pass_client
+@click.argument('uri')
+@click.option('-u', '--username', type=click.STRING, help='Git username')
+@click.option('-p', '--password', type=click.STRING, prompt=True, hide_input=True,
+              help='Git password')
+def import_formula(client, uri, username, password):
+    """
+    Import a formula
+    """
+    if username and not password:
+        raise click.UsageError('You must provide a password when providing a username')
 
-        else:
-            print(USAGE)
+    click.echo('Importing formula from {0}'.format(uri))
+    formula = client.import_formula(uri, git_username=username, git_password=password)
 
-    def complete_formulas(self, text, line, begidx, endidx):
-        # not using line, begidx, or endidx, thus the following pylint disable
-        # pylint: disable=W0613
-        return [i for i in self.FORMULA_COMMANDS if i.startswith(text)]
+    click.echo('Detail: {0}'.format(formula['status_detail']))
 
-    def help_formulas(self):
-        print("Manage formulas.")
-        print("Sub-commands can be one of:\n\t{0}".format(
-            ", ".join(self.FORMULA_COMMANDS)))
-        print("Try 'formulas COMMAND' to get help on (most) sub-commands")
 
-    def _list_formulas(self):
-        """List all formulas"""
+def get_formula_id(client, formula_uri):
+    found_formulas = client.search_formulas(uri=formula_uri)
 
-        print("Getting formulas ... ")
-        formulas = self.stacks.list_formulas()
-        self._print_summary("Formula", formulas)
+    if len(found_formulas) == 0:
+        raise click.Abort('Formula "{0}" does not exist'.format(formula_uri))
+    else:
+        return found_formulas[0]['id']
 
-    def _import_formula(self, args):
-        """Import a formula"""
 
-        if len(args) != 1:
-            print("Usage: formulas import URL")
-            return
+@formulas.command(name='delete')
+@pass_client
+@click.argument('uri')
+def delete_formula(client, uri):
+    """
+    Delete a formula
+    """
+    formula_id = get_formula_id(client, uri)
 
-        formula_url = args[0]
-        print("Importing formula from {0}".format(formula_url))
-        formula = self.stacks.import_formula(formula_url, public=False)
+    click.confirm('Really delete formula {0}?'.format(uri), abort=True)
 
-        if isinstance(formula, list):
-            print("Formula imported, try the 'list' command to monitor status")
-        elif formula.get("detail"):
-            print("Error importing: {0}".format(formula.get("detail")))
-
-    def _delete_formula(self, args):
-        """Delete a formula"""
-
-        args = " ".join(args)
-        if len(args) == 0:
-            print("Usage: formulas delete TITLE")
-            return
-
-        formula_id = self.stacks.get_formula_id(args)
-
-        really = raw_input("Really delete formula {0} (y/n)? ".format(args))
-        if really not in ["y", "Y"]:
-            print("Aborting deletion")
-            return
-
-        self.stacks.delete_formula(formula_id)
-
-        print("Formula deleted, try the 'list' command to monitor status")
+    client.delete_formula(formula_id)

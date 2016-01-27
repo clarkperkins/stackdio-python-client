@@ -44,14 +44,14 @@ SHORT_DESCRIPTION = ('A cloud deployment, automation, and orchestration '
 with open('README.md') as f:
     LONG_DESCRIPTION = f.read()
 
-CFG_DIR = os.path.expanduser("~/.stackdio-cli")
-
 requirements = [
     'Jinja2==2.7.3',
-    'PyYAML==3.11',
-    'cmd2==0.6.7',
+    'PyYAML>=3.10',
+    'click>=6.0,<7.0',
+    'click-shell>=0.4',
+    'colorama>=0.3,<0.4',
     'keyring==3.7',
-    'requests>=2.4.0,<2.6.0',
+    'requests>=2.4.0',
     'simplejson==3.4.0',
 ]
 
@@ -61,11 +61,9 @@ testing_requirements = [
     'pylint<=1.2.0',
 ]
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     test_python_version()
 
-    # Call the setup method from setuptools that does all the heavy lifting
-    # of packaging stackdio-client
     setup(
         name='stackdio',
         version=__version__,
@@ -77,14 +75,6 @@ if __name__ == "__main__":
         license='Apache 2.0',
         include_package_data=True,
         packages=find_packages(),
-        data_files=[
-            (CFG_DIR,
-                [
-                    'bootstrap.yaml',
-                ]),
-            (os.path.join(CFG_DIR, "blueprints"),
-                ["blueprints/%s" % f for f in os.listdir("blueprints")]),
-        ],
         zip_safe=False,
         install_requires=requirements,
         dependency_links=[],
@@ -95,25 +85,22 @@ if __name__ == "__main__":
             'console_scripts': [
                 'stackdio-cli=stackdio.cli:main',
                 'blueprint-generator=stackdio.cli.blueprints:main',
+                'stackdio-config-convert=stackdio.client.config:main',
             ],
         },
         classifiers=[
             'Development Status :: 4 - Beta',
             'Environment :: Web Environment',
-            'Framework :: Django',
             'Intended Audience :: Developers',
             'Intended Audience :: Information Technology',
             'Intended Audience :: System Administrators',
             'License :: OSI Approved :: Apache Software License',
             'Programming Language :: Python',
             'Programming Language :: Python :: 2',
-            'Programming Language :: Python :: 2.6',
             'Programming Language :: Python :: 2.7',
             'Programming Language :: Python :: 3',
-            'Programming Language :: Python :: 3.2',
             'Programming Language :: Python :: 3.3',
             'Programming Language :: Python :: 3.4',
-            'Programming Language :: Python :: 3.5',
             'Topic :: System :: Clustering',
             'Topic :: System :: Distributed Computing',
         ]
