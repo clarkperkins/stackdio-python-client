@@ -52,7 +52,10 @@ def list_templates(client):
         click.echo('Missing blueprint directory config')
         return
 
-    blueprint_dir = os.path.expanduser(client.config['blueprint_dir'])
+    try:
+        blueprint_dir = os.path.expanduser(client.config['blueprint_dir'])
+    except KeyError:
+        raise click.UsageError('Missing \'blueprint_dir\' in config.  Please run `configure`.')
 
     click.echo('Template mappings:')
     mapping = yaml.safe_load(open(os.path.join(blueprint_dir, 'mappings.yaml'), 'r'))
@@ -123,7 +126,10 @@ def create_blueprint(client, mapping, template, var_file, no_prompt):
 
     click.secho('Advanced users only - use the web UI if this isn\'t you!\n', fg='green')
 
-    blueprint_dir = client.config['blueprint_dir']
+    try:
+        blueprint_dir = client.config['blueprint_dir']
+    except KeyError:
+        raise click.UsageError('Missing \'blueprint_dir\' in config.  Please run `configure`.')
 
     if mapping:
         mapping = yaml.safe_load(open(os.path.join(blueprint_dir, 'mappings.yaml'), 'r'))
@@ -157,7 +163,10 @@ def create_all_blueprints(client):
     """
     Create all the blueprints in the map file
     """
-    blueprint_dir = os.path.expanduser(client.config['blueprint_dir'])
+    try:
+        blueprint_dir = os.path.expanduser(client.config['blueprint_dir'])
+    except KeyError:
+        raise click.UsageError('Missing \'blueprint_dir\' in config.  Please run `configure`.')
     mapping = yaml.safe_load(open(os.path.join(blueprint_dir, 'mappings.yaml'), 'r'))
 
     for name, vals in mapping.items():
