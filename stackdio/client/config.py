@@ -16,7 +16,6 @@
 #
 
 import os
-import shutil
 
 import click
 import keyring
@@ -26,7 +25,8 @@ from requests.exceptions import ConnectionError, MissingSchema
 from stackdio.client.compat import ConfigParser, NoOptionError
 
 
-CFG_FILE = os.path.join(os.path.expanduser('~'), '.stackdio', 'client.cfg')
+CFG_DIR = os.path.join(os.path.expanduser('~'), '.stackdio')
+CFG_FILE = os.path.join(CFG_DIR, 'client.cfg')
 
 
 class UserPath(click.Path):

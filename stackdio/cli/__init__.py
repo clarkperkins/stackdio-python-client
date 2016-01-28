@@ -8,25 +8,26 @@ import click_shell
 from stackdio.cli.mixins import blueprints, formulas, stacks
 from stackdio.cli.utils import pass_client
 from stackdio.client import StackdioClient
-from stackdio.client.config import CFG_FILE
+from stackdio.client.config import CFG_DIR
 from stackdio.client.version import __version__
 
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
-HIST_FILE = os.path.join(os.path.expanduser('~'), '.stackdio-cli', 'history')
-
 
 @click_shell.shell(context_settings=CONTEXT_SETTINGS, prompt='stackdio > ',
-                   intro='stackdio-cli, v{0}'.format(__version__), hist_file=HIST_FILE)
+                   intro='stackdio-cli, v{0}'.format(__version__))
 @click.version_option(__version__, '-v', '--version')
-@click.option('-c', '--config-file', help='The config file to use.',
-              type=click.Path(dir_okay=False, file_okay=True), default=CFG_FILE,
-              envvar='STACKDIO_CLI_CONFIG_FILE')
+@click.option('-c', '--config-dir', help='The config directory to use.',
+              type=click.Path(dir_okay=True, file_okay=False), default=CFG_DIR,
+              envvar='STACKDIO_CONFIG_DIR')
 @click.pass_context
-def stackdio(ctx, config_file):
+def stackdio(ctx, config_dir):
     # Create a client instance
-    client = StackdioClient(cfg_file=config_file)
+    client = StackdioClient(cfg_file=os.path.join(config_dir, 'client.cfg'))
+
+    # Set this hist file
+    ctx.command.hist_file = os.path.join(config_dir, 'cli-history')
 
     # Throw an error if we're not configured already
     if ctx.invoked_subcommand not in ('configure', None) and not client.usable():
