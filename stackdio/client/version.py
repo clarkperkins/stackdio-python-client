@@ -29,7 +29,7 @@ try:
 except Exception:
     pass
 
-VERSION = (0, 7, 0, 'dev', 0)
+VERSION = (0, 8, 0, 'dev', 0)
 
 
 def get_version(version):
