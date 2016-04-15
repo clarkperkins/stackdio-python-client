@@ -45,7 +45,7 @@ with open('README.rst') as f:
     LONG_DESCRIPTION = f.read()
 
 requirements = [
-    'Jinja2==2.7.3',
+    'Jinja2>=2.7',
     'PyYAML>=3.10',
     'click>=6.0,<7.0',
     'click-shell>=0.4',

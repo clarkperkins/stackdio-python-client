@@ -74,7 +74,7 @@ def list_templates(client):
     _recurse_dir(os.path.join(blueprint_dir, 'var_files'), ['yaml', 'yml'])
 
 
-def _create_single_blueprint(config, template_file, var_files, no_prompt):
+def _create_single_blueprint(config, template_file, var_files, no_prompt, extra_vars=None):
     blueprint_dir = os.path.expanduser(config['blueprint_dir'])
 
     gen = BlueprintGenerator([os.path.join(blueprint_dir, 'templates')])
@@ -102,6 +102,7 @@ def _create_single_blueprint(config, template_file, var_files, no_prompt):
     # Generate the JSON for the blueprint
     return gen.generate(template_file,
                         final_var_files,  # Pass in a list
+                        variables=extra_vars,
                         prompt=no_prompt)
 
 
@@ -172,7 +173,7 @@ def create_all_blueprints(client):
     for name, vals in mapping.items():
         try:
             bp_json = _create_single_blueprint(client.config, vals['template'],
-                                               vals['var_file'], False)
+                                               vals['var_files'], False, {'title': name})
             client.create_blueprint(bp_json)
             click.secho('Created blueprint {0}'.format(name), fg='green')
         except BlueprintException:
