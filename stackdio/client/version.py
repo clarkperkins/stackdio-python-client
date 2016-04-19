@@ -27,7 +27,7 @@ try:
 except Exception:
     pass
 
-VERSION = (0, 7, 1, 'dev', 0)
+VERSION = (0, 7, 1, 'final', 0)
 
 
 def get_version(version):
