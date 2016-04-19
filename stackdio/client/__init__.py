@@ -66,7 +66,7 @@ class StackdioClient(BlueprintMixin, FormulaMixin, AccountMixin, ImageMixin,
 
             if self.version and (self.version[0] != 0 or self.version[1] != 7):
                 raise IncompatibleVersionException('Server version {0}.{1}.{2} not '
-                                                   'supported.'.format(**self.version))
+                                                   'supported.'.format(*self.version))
 
     @property
     def url(self):
