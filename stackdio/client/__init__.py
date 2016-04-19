@@ -37,6 +37,40 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
+def _get_server_version_info(version_str):
+    basic_info = version_str.split('.')
+
+    major = int(basic_info[0])
+    minor = int(basic_info[1])
+
+    version_type = 'final'
+    extra_id = 0
+
+    try:
+        patch_v = int(basic_info[2])
+    except ValueError:
+        for vtype in ('a', 'b', 'rc'):
+            if vtype in basic_info[2]:
+                version_type = vtype
+                idx = basic_info[2].find(vtype)
+                patch_v = int(basic_info[:idx])
+                extra_id = int(basic_info[2][idx + len(vtype):])
+
+        if version_type == 'final':
+            raise ValueError('Invalid version: {}'.format(version_str))
+
+    if len(basic_info) > 3:
+        for vtype in ('dev', 'post'):
+            if basic_info[3].startswith(vtype):
+                version_type = vtype
+                extra_id = int(basic_info[3][len(vtype):])
+
+        if version_type == 'final':
+            raise ValueError('Invalid version: {}'.format(version_str))
+
+    return major, minor, patch_v, version_type, extra_id
+
+
 class StackdioClient(BlueprintMixin, FormulaMixin, AccountMixin, ImageMixin,
                      RegionMixin, StackMixin, SettingsMixin, HttpMixin):
 
@@ -60,11 +94,12 @@ class StackdioClient(BlueprintMixin, FormulaMixin, AccountMixin, ImageMixin,
         if self.usable():
             try:
                 raw_version = self.get_version(raise_for_status=False)
-                self.version = raw_version.split('.')
+                self.version = _get_server_version_info(raw_version)
             except MissingUrlException:
                 raw_version = None
+                self.version = None
 
-            if raw_version and (self.version[0] != 0 or self.version[1] != 7):
+            if self.version and (self.version[0] != 0 or self.version[1] != 7):
                 raise IncompatibleVersionException(
                     'Server version {0} not supported.  Please upgrade '
                     'stackdio-cli to {1}.{2}.0 or higher.'.format(raw_version, *self.version)
