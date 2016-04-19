@@ -16,9 +16,7 @@
 #
 
 import datetime
-import operator
 import os
-import re
 import subprocess
 import warnings
 from functools import wraps
