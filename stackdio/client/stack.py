@@ -17,7 +17,6 @@
 
 from .exceptions import StackException
 from .http import HttpMixin, get, post, put, delete
-from .version import deprecated
 
 
 class StackMixin(HttpMixin):
