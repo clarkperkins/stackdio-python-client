@@ -32,7 +32,6 @@ from .image import ImageMixin
 from .region import RegionMixin
 from .settings import SettingsMixin
 from .stack import StackMixin
-from .version import _parse_version_string
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -60,13 +59,16 @@ class StackdioClient(BlueprintMixin, FormulaMixin, AccountMixin, ImageMixin,
 
         if self.usable():
             try:
-                _, self.version = _parse_version_string(self.get_version(raise_for_status=False))
+                raw_version = self.get_version(raise_for_status=False)
+                self.version = raw_version.split('.')
             except MissingUrlException:
-                self.version = None
+                raw_version = None
 
-            if self.version and (self.version[0] != 0 or self.version[1] != 7):
-                raise IncompatibleVersionException('Server version {0}.{1}.{2} not '
-                                                   'supported.'.format(*self.version))
+            if raw_version and (self.version[0] != 0 or self.version[1] != 7):
+                raise IncompatibleVersionException(
+                    'Server version {0} not supported.  Please upgrade '
+                    'stackdio-cli to {1}.{2}.0 or higher.'.format(raw_version, *self.version)
+                )
 
     @property
     def url(self):
