@@ -217,3 +217,19 @@ def delete_all_blueprints(client):
     for blueprint in client.list_blueprints():
         client.delete_blueprint(blueprint['id'])
         click.secho('Deleted blueprint {0}'.format(blueprint['title']), fg='magenta')
+
+
+@blueprints.command(name='create-label')
+@pass_client
+@click.argument('title')
+@click.argument('key')
+@click.argument('value')
+def create_label(client, title, key, value):
+    """
+    Create a key:value label on a blueprint
+    """
+    blueprint_id = get_blueprint_id(client, title)
+
+    client.add_blueprint_label(blueprint_id, key, value)
+
+    click.echo('Created label on {0}'.format(title))

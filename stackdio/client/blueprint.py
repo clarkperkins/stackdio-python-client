@@ -16,7 +16,7 @@
 #
 
 from .exceptions import BlueprintException
-from .http import HttpMixin, get, post, delete
+from .http import HttpMixin, get, post, put, patch, delete
 
 
 class BlueprintMixin(HttpMixin):
@@ -67,6 +67,32 @@ class BlueprintMixin(HttpMixin):
     def search_blueprints(self, **kwargs):
         pass
 
-    @delete('blueprints/{blueprint_id}')
+    @delete('blueprints/{blueprint_id}/')
     def delete_blueprint(self, blueprint_id):
+        pass
+
+    @put('blueprints/{blueprint_id}/properties/')
+    def update_blueprint_properties(self, blueprint_id, properties):
+        return properties
+
+    @patch('blueprints/{blueprint_id}/properties/')
+    def partial_update_blueprint_properties(self, blueprint_id, properties):
+        return properties
+
+    @post('blueprints/{blueprint_id}/labels/')
+    def add_blueprint_label(self, blueprint_id, key, value):
+        return {
+            'key': key,
+            'value': value,
+        }
+
+    @put('blueprints/{blueprint_id}/labels/{key}/')
+    def update_blueprint_label(self, blueprint_id, key, value):
+        return {
+            'key': key,
+            'value': value,
+        }
+
+    @delete('blueprints/{blueprint_id}/labels/{key}/')
+    def delete_blueprint_label(self, blueprint_id, key):
         pass

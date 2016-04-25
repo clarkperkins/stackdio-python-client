@@ -16,7 +16,7 @@
 #
 
 from .exceptions import StackException
-from .http import HttpMixin, get, post, put, delete
+from .http import HttpMixin, get, post, put, patch, delete
 
 
 class StackMixin(HttpMixin):
@@ -103,6 +103,32 @@ class StackMixin(HttpMixin):
     @get('stacks/{stack_id}/hosts/', paginate=True)
     def get_stack_hosts(self, stack_id):
         """Get a list of all stack hosts"""
+        pass
+
+    @put('stacks/{stack_id}/properties/')
+    def update_stack_properties(self, stack_id, properties):
+        return properties
+
+    @patch('stacks/{stack_id}/properties/')
+    def partial_update_stack_properties(self, stack_id, properties):
+        return properties
+
+    @post('stacks/{stack_id}/labels/')
+    def add_stack_label(self, stack_id, key, value):
+        return {
+            'key': key,
+            'value': value,
+        }
+
+    @put('stacks/{stack_id}/labels/{key}/')
+    def update_stack_label(self, stack_id, key, value):
+        return {
+            'key': key,
+            'value': value,
+        }
+
+    @delete('stacks/{stack_id}/labels/{key}/')
+    def delete_stack_label(self, stack_id, key):
         pass
 
     @get('stacks/{stack_id}/logs/')
