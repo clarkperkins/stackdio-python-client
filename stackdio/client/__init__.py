@@ -99,7 +99,7 @@ class StackdioClient(BlueprintMixin, FormulaMixin, AccountMixin, ImageMixin,
                 raw_version = None
                 self.version = None
 
-            if self.version and (self.version[0] != 0 or self.version[1] != 7):
+            if self.version and (self.version[0] != 0 or self.version[1] != 8):
                 raise IncompatibleVersionException(
                     'Server version {0} not supported.  Please upgrade '
                     'stackdio-cli to {1}.{2}.0 or higher.'.format(raw_version, *self.version)
