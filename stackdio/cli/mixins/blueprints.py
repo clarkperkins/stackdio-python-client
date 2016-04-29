@@ -133,13 +133,13 @@ def create_blueprint(client, mapping, template, var_file, no_prompt):
         raise click.UsageError('Missing \'blueprint_dir\' in config.  Please run `configure`.')
 
     if mapping:
-        mapping = yaml.safe_load(open(os.path.join(blueprint_dir, 'mappings.yaml'), 'r'))
-        if not mapping or mapping not in mapping:
+        mappings = yaml.safe_load(open(os.path.join(blueprint_dir, 'mappings.yaml'), 'r'))
+        if not mappings or mapping not in mappings:
             click.secho('You gave an invalid mapping.', fg='red')
             return
         else:
-            template = mapping[mapping].get('template')
-            var_file = mapping[mapping].get('var_files', [])
+            template = mappings[mapping].get('template')
+            var_file = mappings[mapping].get('var_files', [])
             if not template:
                 click.secho('Your mapping must specify a template.', fg='red')
                 return
