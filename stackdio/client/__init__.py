@@ -74,7 +74,7 @@ def _get_server_version_info(version_str):
 class StackdioClient(BlueprintMixin, FormulaMixin, AccountMixin, ImageMixin,
                      RegionMixin, StackMixin, SettingsMixin, HttpMixin):
 
-    def __init__(self, url=None, username=None, password=None, verify=True, cfg_file=None):
+    def __init__(self, url=None, username=None, password=None, verify=None, cfg_file=None):
         self.config = StackdioConfig(cfg_file)
 
         self._password = self.config.get_password()
