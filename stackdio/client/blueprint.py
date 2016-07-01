@@ -71,7 +71,7 @@ class BlueprintMixin(HttpMixin):
     def delete_blueprint(self, blueprint_id):
         pass
 
-    @get('blueprints/{blueprint_id}/host_definitions/')
+    @get('blueprints/{blueprint_id}/host_definitions/', paginate=True)
     def get_blueprint_host_definitions(self, blueprint_id):
         pass
 
