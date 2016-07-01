@@ -32,6 +32,7 @@ from .image import ImageMixin
 from .region import RegionMixin
 from .settings import SettingsMixin
 from .stack import StackMixin
+from .snapshot import SnapshotMixin
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -72,7 +73,7 @@ def _get_server_version_info(version_str):
 
 
 class StackdioClient(BlueprintMixin, FormulaMixin, AccountMixin, ImageMixin,
-                     RegionMixin, StackMixin, SettingsMixin, HttpMixin):
+                     RegionMixin, StackMixin, SettingsMixin, SnapshotMixin, HttpMixin):
 
     def __init__(self, url=None, username=None, password=None, verify=None, cfg_file=None):
         self.config = StackdioConfig(cfg_file)

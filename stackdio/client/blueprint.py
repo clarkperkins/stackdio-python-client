@@ -71,6 +71,14 @@ class BlueprintMixin(HttpMixin):
     def delete_blueprint(self, blueprint_id):
         pass
 
+    @get('blueprints/{blueprint_id}/host_definitions/')
+    def get_blueprint_host_definitions(self, blueprint_id):
+        pass
+
+    @get('blueprints/{blueprint_id}/properties/')
+    def get_blueprint_properties(self, blueprint_id):
+        pass
+
     @put('blueprints/{blueprint_id}/properties/')
     def update_blueprint_properties(self, blueprint_id, properties):
         return properties
