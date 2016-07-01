@@ -25,18 +25,18 @@ class SnapshotMixin(HttpMixin):
         """Create a snapshot"""
         return snapshot
 
-    @get('snapshots/', paginate=True)
+    @get('cloud/snapshots/', paginate=True)
     def list_snapshots(self):
         pass
 
-    @get('snapshots/{snapshot_id}/')
+    @get('cloud/snapshots/{snapshot_id}/')
     def get_snapshot(self, snapshot_id):
         pass
 
-    @get('snapshots/', paginate=True)
+    @get('cloud/snapshots/', paginate=True)
     def search_snapshots(self, **kwargs):
         pass
 
-    @delete('snapshots/{snapshot_id}/')
+    @delete('cloud/snapshots/{snapshot_id}/')
     def delete_snapshot(self, snapshot_id):
         pass
