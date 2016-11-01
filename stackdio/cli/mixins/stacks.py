@@ -52,7 +52,7 @@ def launch_stack(client, blueprint_title, stack_title):
 
 
 def get_stack_id(client, stack_title):
-    found_stacks = client.search_stacks(title=stack_title)
+    found_stacks = client.list_stacks(title=stack_title)
 
     if len(found_stacks) == 0:
         raise click.Abort('Stack "{0}" does not exist'.format(stack_title))
@@ -73,7 +73,7 @@ def stack_history(client, stack_title, length):
     stack_id = get_stack_id(client, stack_title)
     history = client.get_stack_history(stack_id)
     for event in history[0:min(length, len(history))]:
-        click.echo('[{created}] {level} // {event} // {status}'.format(**event))
+        click.echo('[{created}] {message}'.format(**event))
 
 
 @stacks.command(name='hostnames')

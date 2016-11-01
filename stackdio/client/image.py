@@ -32,18 +32,13 @@ class ImageMixin(HttpMixin):
         }
 
     @get('cloud/images/', paginate=True)
-    def list_images(self):
+    def list_images(self, **kwargs):
         """List all images"""
         pass
 
     @get('cloud/images/{image_id}/')
     def get_image(self, image_id):
         """Return the image that matches the given id"""
-        pass
-
-    @get('cloud/images/', paginate=True)
-    def search_images(self, **kwargs):
-        """List all images"""
         pass
 
     @delete('cloud/images/{image_id}/')

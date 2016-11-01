@@ -33,18 +33,13 @@ class StackMixin(HttpMixin):
         return stack_data
 
     @get('stacks/', paginate=True)
-    def list_stacks(self):
+    def list_stacks(self, **kwargs):
         """Return a list of all stacks"""
         pass
 
     @get('stacks/{stack_id}/')
     def get_stack(self, stack_id):
         """Get stack info"""
-        pass
-
-    @get('stacks/', paginate=True)
-    def search_stacks(self, **kwargs):
-        """Search for stacks that match the given criteria"""
         pass
 
     @delete('stacks/{stack_id}/')
@@ -99,6 +94,10 @@ class StackMixin(HttpMixin):
     def get_stack_history(self, stack_id):
         """Get stack info"""
         pass
+
+    @get_stack_history.response
+    def get_stack_history(self, resp):
+        return list(reversed(resp))
 
     @get('stacks/{stack_id}/hosts/', paginate=True)
     def get_stack_hosts(self, stack_id):

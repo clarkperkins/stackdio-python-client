@@ -21,13 +21,8 @@ from .http import HttpMixin, get, post, delete
 class AccountMixin(HttpMixin):
 
     @get('cloud/providers/', paginate=True)
-    def list_providers(self):
+    def list_providers(self, **kwargs):
         """List all providers"""
-        pass
-
-    @get('cloud/providers/', paginate=True)
-    def search_providers(self, **kwargs):
-        """Search for a provider"""
         pass
 
     @post('cloud/accounts/')
@@ -53,18 +48,13 @@ class AccountMixin(HttpMixin):
         return form_data
 
     @get('cloud/accounts/', paginate=True)
-    def list_accounts(self):
+    def list_accounts(self, **kwargs):
         """List all account"""
         pass
 
     @get('cloud/accounts/{account_id}/')
     def get_account(self, account_id):
         """Return the account that matches the given id"""
-        pass
-
-    @get('cloud/accounts/')
-    def search_accounts(self, **kwargs):
-        """List all accounts"""
         pass
 
     @delete('cloud/accounts/{account_id}/')

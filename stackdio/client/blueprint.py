@@ -56,15 +56,11 @@ class BlueprintMixin(HttpMixin):
         return blueprint
 
     @get('blueprints/', paginate=True)
-    def list_blueprints(self):
+    def list_blueprints(self, **kwargs):
         pass
 
     @get('blueprints/{blueprint_id}/')
     def get_blueprint(self, blueprint_id):
-        pass
-
-    @get('blueprints/', paginate=True)
-    def search_blueprints(self, **kwargs):
         pass
 
     @delete('blueprints/{blueprint_id}/')

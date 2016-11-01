@@ -181,7 +181,7 @@ def create_all_blueprints(client):
 
 
 def get_blueprint_id(client, blueprint_title):
-    found_blueprints = client.search_blueprints(title=blueprint_title)
+    found_blueprints = client.list_blueprints(title=blueprint_title)
 
     if len(found_blueprints) == 0:
         raise click.Abort('Blueprint "{0}" does not exist'.format(blueprint_title))

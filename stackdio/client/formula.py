@@ -37,7 +37,7 @@ class FormulaMixin(HttpMixin):
         return data
 
     @get('formulas/', paginate=True)
-    def list_formulas(self):
+    def list_formulas(self, **kwargs):
         """Return all formulas"""
         pass
 
@@ -48,11 +48,6 @@ class FormulaMixin(HttpMixin):
 
     @get('formulas/{formula_id}/components/?version={version}', paginate=True)
     def list_components_for_version(self, formula_id, version):
-        pass
-
-    @get('formulas/', paginate=True)
-    def search_formulas(self, **kwargs):
-        """Get a formula with matching id"""
         pass
 
     @delete('formulas/{formula_id}/')

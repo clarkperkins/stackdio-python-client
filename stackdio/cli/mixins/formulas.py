@@ -43,7 +43,7 @@ def import_formula(client, uri, username, password):
 
 
 def get_formula_id(client, formula_uri):
-    found_formulas = client.search_formulas(uri=formula_uri)
+    found_formulas = client.list_formulas(uri=formula_uri)
 
     if len(found_formulas) == 0:
         raise click.Abort('Formula "{0}" does not exist'.format(formula_uri))

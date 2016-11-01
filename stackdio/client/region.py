@@ -20,25 +20,17 @@ from .http import HttpMixin, get
 
 class RegionMixin(HttpMixin):
     @get('cloud/providers/{provider_name}/regions/', paginate=True)
-    def list_regions(self, provider_name):
+    def list_regions(self, provider_name, **kwargs):
         pass
 
     @get('cloud/providers/{provider_name}/regions/{region_id}/')
     def get_region(self, provider_name, region_id):
         pass
 
-    @get('cloud/providers/{provider_name}/regions/', paginate=True)
-    def search_regions(self, provider_name, **kwargs):
-        pass
-
     @get('cloud/providers/{provider_name}/zones/', paginate=True)
-    def list_zones(self):
+    def list_zones(self, provider_name, **kwargs):
         pass
 
     @get('cloud/providers/{provider_name}/zones/{zone_id}')
     def get_zone(self, provider_name, zone_id):
-        pass
-
-    @get('cloud/providers/{provider_name}/zones/', paginate=True)
-    def search_zones(self, provider_name, **kwargs):
         pass
