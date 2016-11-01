@@ -26,15 +26,11 @@ class SnapshotMixin(HttpMixin):
         return snapshot
 
     @get('cloud/snapshots/', paginate=True)
-    def list_snapshots(self):
+    def list_snapshots(self, **kwargs):
         pass
 
     @get('cloud/snapshots/{snapshot_id}/')
     def get_snapshot(self, snapshot_id):
-        pass
-
-    @get('cloud/snapshots/', paginate=True)
-    def search_snapshots(self, **kwargs):
         pass
 
     @delete('cloud/snapshots/{snapshot_id}/')
