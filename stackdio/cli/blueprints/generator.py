@@ -184,7 +184,8 @@ class BlueprintGenerator(object):
 
         return unset_vars, set_vars
 
-    def generate(self, template_file, var_files=(), variables=None, prompt=False, debug=False):
+    def generate(self, template_file, var_files=(), variables=None,
+                 prompt=False, debug=False, suppress_warnings=False):
         """
         Generate the rendered blueprint and return it as a python dict
 
@@ -255,14 +256,14 @@ class BlueprintGenerator(object):
             # If it is set elsewhere, it's not an issue
             optional_vars = optional_vars - set(context)
 
-            if null_vars:
+            if null_vars and not suppress_warnings:
                 warn_str = '\nWARNING: Null variables (replaced with empty string):\n'
                 for var in null_vars:
                     warn_str += '   {0}\n'.format(var)
                 self.warning(warn_str, 0)
 
             # Print a warning if there's unset optional variables
-            if optional_vars:
+            if optional_vars and not suppress_warnings:
                 warn_str = '\nWARNING: Missing optional variables:\n'
                 for var in sorted(optional_vars):
                     warn_str += '   {0}\n'.format(var)

@@ -74,7 +74,8 @@ def list_templates(client):
     _recurse_dir(os.path.join(blueprint_dir, 'var_files'), ['yaml', 'yml'])
 
 
-def _create_single_blueprint(config, template_file, var_files, no_prompt, extra_vars=None):
+def _create_single_blueprint(config, template_file, var_files, no_prompt,
+                             extra_vars=None, suppress_warnings=False):
     blueprint_dir = os.path.expanduser(config['blueprint_dir'])
 
     gen = BlueprintGenerator([os.path.join(blueprint_dir, 'templates')])
@@ -103,7 +104,8 @@ def _create_single_blueprint(config, template_file, var_files, no_prompt, extra_
     return gen.generate(template_file,
                         final_var_files,  # Pass in a list
                         variables=extra_vars,
-                        prompt=no_prompt)
+                        prompt=no_prompt,
+                        suppress_warnings=suppress_warnings)
 
 
 @blueprints.command(name='create')
@@ -170,10 +172,19 @@ def create_all_blueprints(client):
         raise click.UsageError('Missing \'blueprint_dir\' in config.  Please run `configure`.')
     mapping = yaml.safe_load(open(os.path.join(blueprint_dir, 'mappings.yaml'), 'r'))
 
+    blueprints = client.list_blueprints()
+
+    blueprint_titles = [blueprint['title'] for blueprint in blueprints]
+
     for name, vals in mapping.items():
+        if name in blueprint_titles:
+            click.secho('Skipping creation of {0}, it already exists.'.format(name), fg='yellow')
+            continue
+
         try:
             bp_json = _create_single_blueprint(client.config, vals['template'],
-                                               vals['var_files'], False, {'title': name})
+                                               vals['var_files'], False, {'title': name},
+                                               suppress_warnings=True)
             client.create_blueprint(bp_json)
             click.secho('Created blueprint {0}'.format(name), fg='green')
         except BlueprintException:
