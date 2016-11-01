@@ -2,19 +2,12 @@ language: python
 
 python:
   - "2.7"
-  - "3.3"
   - "3.4"
+  - "3.5"
 
 cache:
   directories:
     - $HOME/.cache/pip
-
-# Set up our environment
-env:
-  NOSE_WITH_XUNIT: 1
-  NOSE_WITH_COVERAGE: 1
-  NOSE_COVER_BRANCHES: 1
-  NOSE_COVER_INCLUSIVE: 1
 
 # So that we get a docker container
 sudo: false
@@ -37,18 +30,30 @@ script:
 # Only build artifacts on success
 after_success:
   - coveralls
-  - export STACKDIO_VERSION=`python setup.py --version`
   - python setup.py sdist
   - python setup.py bdist_wheel
 
 deploy:
-  provider: releases
-  api_key:
-    secure: T4jI1aZQ+wDJBgGxcbdrtLz3zpXA9yZwmrsm8d3GqEGxApMtkKLWq0uqf86C8VkqaY6p4Nm1a/PTApV1isbuSoJbdeMVJA1MlYB/G7QMK7eI8nFqkw7Q4jzuOdEC0D1CPZx7ZWBn0bYxSRTcSeQSnGeGDy2KxekGSZFfIxe4APo=
-  file:
-    - dist/stackdio-${STACKDIO_VERSION}.tar.gz
-    - dist/stackdio-${STACKDIO_VERSION}-py2.py3-none-any.whl
-  skip_cleanup: true
-  on:
-    tags: true
-    repo: stackdio/stackdio-python-client
+  - provider: releases
+    api_key:
+      secure: T4jI1aZQ+wDJBgGxcbdrtLz3zpXA9yZwmrsm8d3GqEGxApMtkKLWq0uqf86C8VkqaY6p4Nm1a/PTApV1isbuSoJbdeMVJA1MlYB/G7QMK7eI8nFqkw7Q4jzuOdEC0D1CPZx7ZWBn0bYxSRTcSeQSnGeGDy2KxekGSZFfIxe4APo=
+    file:
+      - dist/stackdio-${TRAVIS_TAG}.tar.gz
+      - dist/stackdio-${TRAVIS_TAG}-py2.py3-none-any.whl
+    skip_cleanup: true
+    on:
+      tags: true
+      repo: stackdio/stackdio-python-client
+      python: "2.7"
+
+  # Upload to pypi.  Do this instead of the pypi provider so that we
+  # ensure the exact same artifact is uploaded to github and pypi.
+  # The pypi provider will re-build the 2 artifacts, which is not ideal.
+  # This requires setting TWINE_USERNAME and TWINE_PASSWORD in travis.
+  - provider: script
+    script: twine upload dist/stackdio-${TRAVIS_TAG}.tar.gz dist/stackdio-${TRAVIS_TAG}-py2.py3-none-any.whl
+    skip_cleanup: true
+    on:
+      tags: true
+      repo: stackdio/stackdio-python-client
+      python: "2.7"

@@ -15,7 +15,6 @@
 # limitations under the License.
 #
 
-import os
 import sys
 
 from setuptools import setup, find_packages
@@ -25,9 +24,9 @@ def test_python_version():
     major = sys.version_info[0]
     minor = sys.version_info[1]
     micro = sys.version_info[2]
-    if float('%d.%d' % (major, minor)) < 2.6:
+    if (major, minor) < (2, 7):
         err_msg = ('Your Python version {0}.{1}.{2} is not supported.\n'
-                   'stackdio-server requires Python 2.6 or newer.\n'.format(major, minor, micro))
+                   'stackdio-server requires Python 2.7 or newer.\n'.format(major, minor, micro))
         sys.stderr.write(err_msg)
         sys.exit(1)
 
@@ -85,7 +84,6 @@ if __name__ == '__main__':
             'console_scripts': [
                 'stackdio-cli=stackdio.cli:main',
                 'blueprint-generator=stackdio.cli.blueprints:main',
-                'stackdio-config-convert=stackdio.client.config:main',
             ],
         },
         classifiers=[
@@ -99,8 +97,8 @@ if __name__ == '__main__':
             'Programming Language :: Python :: 2',
             'Programming Language :: Python :: 2.7',
             'Programming Language :: Python :: 3',
-            'Programming Language :: Python :: 3.3',
             'Programming Language :: Python :: 3.4',
+            'Programming Language :: Python :: 3.5',
             'Topic :: System :: Clustering',
             'Topic :: System :: Distributed Computing',
         ]
