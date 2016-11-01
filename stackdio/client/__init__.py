@@ -15,8 +15,11 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
+
 import logging
 
+from pkg_resources import parse_version
 from .account import AccountMixin
 from .blueprint import BlueprintMixin
 from .config import StackdioConfig
@@ -37,44 +40,10 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
-def _get_server_version_info(version_str):
-    basic_info = version_str.split('.')
-
-    major = int(basic_info[0])
-    minor = int(basic_info[1])
-
-    version_type = 'final'
-    extra_id = 0
-
-    try:
-        patch_v = int(basic_info[2])
-    except ValueError:
-        for vtype in ('a', 'b', 'rc'):
-            if vtype in basic_info[2]:
-                version_type = vtype
-                idx = basic_info[2].find(vtype)
-                patch_v = int(basic_info[:idx])
-                extra_id = int(basic_info[2][idx + len(vtype):])
-
-        if version_type == 'final':
-            raise ValueError('Invalid version: {}'.format(version_str))
-
-    if len(basic_info) > 3:
-        for vtype in ('dev', 'post'):
-            if basic_info[3].startswith(vtype):
-                version_type = vtype
-                extra_id = int(basic_info[3][len(vtype):])
-
-        if version_type == 'final':
-            raise ValueError('Invalid version: {}'.format(version_str))
-
-    return major, minor, patch_v, version_type, extra_id
-
-
 class StackdioClient(BlueprintMixin, FormulaMixin, AccountMixin, ImageMixin,
                      RegionMixin, StackMixin, SettingsMixin, HttpMixin):
 
-    def __init__(self, url=None, username=None, password=None, verify=True, cfg_file=None):
+    def __init__(self, url=None, username=None, password=None, verify=None, cfg_file=None):
         self.config = StackdioConfig(cfg_file)
 
         self._password = self.config.get_password()
@@ -94,12 +63,12 @@ class StackdioClient(BlueprintMixin, FormulaMixin, AccountMixin, ImageMixin,
         if self.usable():
             try:
                 raw_version = self.get_version(raise_for_status=False)
-                self.version = _get_server_version_info(raw_version)
+                self.version = parse_version(raw_version)
             except MissingUrlException:
                 raw_version = None
                 self.version = None
 
-            if self.version and (self.version[0] != 0 or self.version[1] != 8):
+            if self.version and not self.version.base_version.startswith('0.8'):
                 raise IncompatibleVersionException(
                     'Server version {0} not supported.  Please upgrade '
                     'stackdio-cli to {1}.{2}.0 or higher.'.format(raw_version, *self.version)
