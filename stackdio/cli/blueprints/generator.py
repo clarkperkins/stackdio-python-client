@@ -1,15 +1,15 @@
-from __future__ import print_function
+from __future__ import print_function, unicode_literals
 
-import sys
-import os
 import json
+import os
+import sys
 
 import click
 import yaml
 from jinja2 import Environment, FileSystemLoader, StrictUndefined, meta
 from jinja2.exceptions import TemplateNotFound, TemplateSyntaxError, UndefinedError
-from jinja2.nodes import Assign, Block, Const, If, Not
 from jinja2.filters import do_replace, evalcontextfilter
+from jinja2.nodes import Assign, Block, Const, If, Not
 
 
 class BlueprintException(Exception):
@@ -232,12 +232,12 @@ class BlueprintGenerator(object):
                 if prompt:
                     # Prompt for missing vars
                     for var in sorted(missing_vars):
-                        context[var] = self.prompt('{0}: '.format(var))
+                        context[var] = self.prompt('{}: '.format(var))
                 else:
                     # Print an error
                     error_str = 'Missing variables:\n'
                     for var in sorted(missing_vars):
-                        error_str += '   {0}\n'.format(var)
+                        error_str += '   {}\n'.format(var)
                     self.error_exit(error_str, 0)
 
             # Find the set of optional variables (ones inside of a 'if <var> is not undefined'
@@ -259,14 +259,14 @@ class BlueprintGenerator(object):
             if null_vars and not suppress_warnings:
                 warn_str = '\nWARNING: Null variables (replaced with empty string):\n'
                 for var in null_vars:
-                    warn_str += '   {0}\n'.format(var)
+                    warn_str += '   {}\n'.format(var)
                 self.warning(warn_str, 0)
 
             # Print a warning if there's unset optional variables
             if optional_vars and not suppress_warnings:
                 warn_str = '\nWARNING: Missing optional variables:\n'
                 for var in sorted(optional_vars):
-                    warn_str += '   {0}\n'.format(var)
+                    warn_str += '   {}\n'.format(var)
                 self.warning(warn_str, 0)
 
             # Generate the blueprint
@@ -276,24 +276,31 @@ class BlueprintGenerator(object):
             set_vars.update(context)
             context = set_vars
 
-            template_json = template.render(**context)
+            rendered_template = template.render(**context)
 
             if debug:
                 click.echo('\n')
-                click.echo(template_json)
+                click.echo(rendered_template)
                 click.echo('\n')
 
-            # Return a dict object rather than a string
-            return json.loads(template_json)
+            template_extension = template_file.split('.')[-1]
+
+            if template_extension in ('json',):
+                # Return a dict object rather than a string
+                return json.loads(rendered_template)
+            elif template_extension in ('yaml', 'yml'):
+                return yaml.safe_load(rendered_template)
+            else:
+                self.error_exit('Template extension {} is not valid.'.format(template_extension))
 
         except TemplateNotFound:
-            self.error_exit('Your template file {0} was not found.'.format(template_file))
+            self.error_exit('Your template file {} was not found.'.format(template_file))
         except TemplateSyntaxError as e:
-            self.error_exit('Invalid template error at line {0}:\n{1}'.format(
+            self.error_exit('Invalid template error at line {}:\n{}'.format(
                 e.lineno,
                 str(e)
             ))
         except UndefinedError as e:
-            self.error_exit('Missing variable: {0}'.format(str(e)))
+            self.error_exit('Missing variable: {}'.format(str(e)))
         # except ValueError:
         #     self.error_exit('Invalid JSON.  Check your template file.')
