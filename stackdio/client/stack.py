@@ -97,7 +97,7 @@ class StackMixin(HttpMixin):
 
     @get_stack_history.response
     def get_stack_history(self, resp):
-        return list(reversed(resp))
+        return reversed(resp)
 
     @get('stacks/{stack_id}/hosts/', paginate=True)
     def get_stack_hosts(self, stack_id):

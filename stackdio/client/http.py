@@ -95,10 +95,7 @@ def request(path, method, paginate=False, jsonify=True, **req_kwargs):
             self.obj = None
 
             self.data_func = dfunc
-            self.response_func = rfunc
-
-            if self.response_func is None:
-                self.response_func = default_response
+            self.response_func = rfunc or default_response
 
             self.quiet = quiet
 
