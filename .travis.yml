@@ -37,7 +37,7 @@ after_success:
 deploy:
   - provider: releases
     api_key:
-      secure: T4jI1aZQ+wDJBgGxcbdrtLz3zpXA9yZwmrsm8d3GqEGxApMtkKLWq0uqf86C8VkqaY6p4Nm1a/PTApV1isbuSoJbdeMVJA1MlYB/G7QMK7eI8nFqkw7Q4jzuOdEC0D1CPZx7ZWBn0bYxSRTcSeQSnGeGDy2KxekGSZFfIxe4APo=
+      secure: WDRJ+QYPfAMuH8sEFPTTEHabaEtfvLWvHiXi69NA3lruIlKr0Id5gpF/Bqr5VfHiz9jdHuBRdVLgYRYVXAVsRkw13N1YlHgR4j4oi61fMugwDTC820Jnf8EDpuvXys8TPiPRh7Xe2XTGc4HMO0moGz6gp9gH4OAsxGgLPNLmiDA=
     file:
       - dist/stackdio-${TRAVIS_TAG}.tar.gz
       - dist/stackdio-${TRAVIS_TAG}-py2.py3-none-any.whl
